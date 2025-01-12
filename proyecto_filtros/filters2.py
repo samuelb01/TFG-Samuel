@@ -76,7 +76,7 @@ def bands_filter(fs, signal_data, lower_frecencies, upper_frequencies):
     
 
 
-def show_levels(signal, band_levels, nominal_central_frequencies, lower_frequencies, upper_frequencies):
+def show_levels(band_levels, nominal_central_frequencies, lower_frequencies, upper_frequencies):
     """Muestra una gráfica de niveles por banda
 
     Args:
@@ -92,7 +92,7 @@ def show_levels(signal, band_levels, nominal_central_frequencies, lower_frequenc
     plt.xscale('log')
     plt.xlabel('Frecuencia (Hz)')
     plt.ylabel('Nivel (dB)')
-    plt.title(f'Niveles por bandas de {"tercios de octava" if len(nominal_central_frequencies) > len(NOMINAL_OCTAVE_FREC) else "octava"} - {os.path.basename(signal)}')
+    # plt.title(f'Niveles por bandas de {"tercios de octava" if len(nominal_central_frequencies) > len(NOMINAL_OCTAVE_FREC) else "octava"} - {os.path.basename(signal)}')
     plt.xticks(nominal_central_frequencies, labels=[f"{int(f)} Hz" for f in nominal_central_frequencies], rotation=45)
     plt.grid(True, which="both", linestyle='--', linewidth=0.5)
     plt.tight_layout()
@@ -112,23 +112,55 @@ def third_octave_filter(signal, range=[NOMINAL_THIRDOCTAVE_FREC[0], NOMINAL_THIR
     show_levels(signal, band_levels, NOMINAL_THIRDOCTAVE_FREC, lower_frequencies, upper_frequencies)
 
 
-def octave_filter(signal, range=[NOMINAL_OCTAVE_FREC[0], NOMINAL_OCTAVE_FREC[-1]]):
+def octave_filter(signal_data, fs, range=[NOMINAL_OCTAVE_FREC[0], NOMINAL_OCTAVE_FREC[-1]]):
     """Realiza el filtrado octavas y lo muestra
 
     Args:
         signal (str): signal a filtrar
         range (list, optional): Array con dos valores, la banda inicial y final. Defaults to [NOMINAL_THIRDOCTAVE_FREC[0], NOMINAL_THIRDOCTAVE_FREC[-1]].
     """
-    fs, signal_data = load_file(signal)
+    # signal_data = load_file(signal)
     lower_frequencies, upper_frequencies, central_frequencies = calc_bands(range[0], range[1], 1)
     band_levels = bands_filter(fs, signal_data, lower_frequencies, upper_frequencies)
-    show_levels(signal, band_levels, NOMINAL_OCTAVE_FREC, lower_frequencies, upper_frequencies)
+    show_levels(band_levels, NOMINAL_OCTAVE_FREC, lower_frequencies, upper_frequencies)
 
+def white_noise_generator(duration, fs):
+    sample_number = int(duration*fs)
+    white_noise = np.random.randn(sample_number)
 
-# Ejecución
-third_octave_filter(PINK_NOISE)
-octave_filter(PINK_NOISE)
-third_octave_filter(WHITE_NOISE)
-octave_filter(WHITE_NOISE)
+    return white_noise
+
+fs = 48000
+
+white_noise = white_noise_generator(60, fs)
+
+# octave_filter(white_noise, fs)
+
+# # Ejecución
+# third_octave_filter(PINK_NOISE)
+# octave_filter(PINK_NOISE)
+# third_octave_filter(WHITE_NOISE)
+# octave_filter(WHITE_NOISE)
 
 # third_octave_filter(PINK_NOISE, [500, 8000])
+
+import numpy as np
+from scipy.io.wavfile import write
+
+def white_noise_generator(duration, fs):
+    sample_number = int(duration * fs)
+    white_noise = np.random.randn(sample_number)
+    
+    # Normaliza el ruido blanco a un rango adecuado para audio (por ejemplo, entre -1 y 1)
+    white_noise = white_noise / np.max(np.abs(white_noise))  # Normaliza a -1 a 1
+
+    return 12589 * white_noise
+
+fs = 48000  # Frecuencia de muestreo de 48 kHz
+duration = 60  # Duración de 60 segundos
+
+# Generar el ruido blanco
+white_noise = white_noise_generator(duration, fs)
+
+# Guardar el ruido blanco como un archivo WAV
+write('ruido_blanco.wav', fs, (white_noise * 32767).astype(np.int16))  # Normaliza a 16 bits PCM
