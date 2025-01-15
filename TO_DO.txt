@@ -1,0 +1,6 @@
+PARA HACER:
+    - Ganancia y atenuación a la entrada
+    - Ecualización de las bandas
+    - Reproducción en tiempo real
+    - Ecualizaciones predefinidas
+    

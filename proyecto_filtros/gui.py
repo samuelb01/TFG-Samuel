@@ -13,43 +13,43 @@ from noise_generator import generate_white_noise, generate_pink_noise    # Impor
 DURATION = 60   # Duración del audio a crear
 SAMPLE_RATE = 48000 # Frecuencia de muestreo
 
-# Nombre de los archivos de ruido
-PINK_NOISE = "pink_noise_mono_48khz_16bits.wav"
-# WHITE_NOISE = generate_white_noise(DURATION, SAMPLE_RATE)
 
 def apply_filter():
     # Obtener valores de la variable actual del ruido y del tipo de filtro
     selected_noise = noise_type.get()
     selected_filter = filter_type.get()
 
+    # Decidir tipo de filtro y de ruido para filtrar
     if selected_noise != "" and selected_filter != "":
 
-        if selected_noise == "WHITE NOISE":
+        if selected_noise == "WHITE NOISE": # RUIDO BLANCO
             noise_data = generate_white_noise(DURATION, SAMPLE_RATE)
 
-        elif selected_noise == "PINK NOISE":
+        elif selected_noise == "PINK NOISE":    #RUIDO ROSA
             noise_data = generate_pink_noise(DURATION, SAMPLE_RATE)
             
 
-        if selected_filter == "1/1":
+        if selected_filter == "1/1":    # 1/1 OCTAVA
             octaveFilter(noise_data, SAMPLE_RATE)
 
-        elif selected_filter == "1/3":
+        elif selected_filter == "1/3":  # 1/3 OCTAVA
             thirdOctaveFilter(noise_data, SAMPLE_RATE)
 
+    # Muestra ventana de error si no hay ruido y/o filtro seleccionado
     else:
         messagebox.showerror("Advertencia", "Debe seleccionar un tipo de filtro y de ruido")
 
 
 # Configuración principal de la ventana
 root = tk.Tk()  # Ventana principal de la interfaz
-root.title("Ecualizador Gráfico")   # Título de la ventana
-root.geometry("900x500")
+root.title("Ecualizador Gráfico")  # Título de la ventana
+root.geometry("900x500")  # Tamaño de la ventana
 
 # Variable para el tipo de ruido elegido
 noise_type = tk.StringVar()
 filter_type = tk.StringVar()
 
+# Marco para agrupar los widgets
 frm_options = ttk.Frame(root, padding=10)
 frm_options.grid(padx=10, pady=10)
 
