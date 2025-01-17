@@ -13,8 +13,7 @@ from noise_generator import generate_white_noise, generate_pink_noise
 #import soundfile
 
 
-PINK_NOISE = os.path.join("data", "pink_noise_mono_48khz_16bits.wav")
-WHITE_NOISE = os.path.join("data", "white_noise_mono_48khz_16bits.wav")
+# CONSTANTES
 NOMINAL_THIRDOCTAVE_FREC = [25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400,
                              500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000,
                                6300, 8000, 10000, 12500, 16000, 20000]
@@ -32,7 +31,6 @@ def cargarAudio(audio):
 
 def calcMidFrecuencies(b, x): 
     # (b, x) -> fm
-
     fm = FR * (G ** (x/b))  # Exact mid-band frecuencies [array]
 
     return fm
@@ -40,7 +38,7 @@ def calcMidFrecuencies(b, x):
 
 def calcButterFilter(fs, signal_data, fl_selected_bands, fh_selected_bands):
 
-    N = 6   # Order of the filter
+    N = 6   # Orden del filtro
     band_levels = []   # Array con las bandas filtradas
     
     # Aplicación de los filtros a la señal de audio
@@ -52,13 +50,14 @@ def calcButterFilter(fs, signal_data, fl_selected_bands, fh_selected_bands):
         rms = np.sqrt(np.mean(filtered_signal**2))  # Valor de amplitud RMS
         level = 20 * np.log10(rms)  # Nivel de cada banda
 
-        band_levels.append(level)
+        band_levels.append(level)  # Niveles por bandas para representar y operar
 
     return band_levels
 
 
 def calcRMS(filtered_values):
 
+    # Root Mean Square
     rms_values = []
 
     for filtered in filtered_values:
@@ -103,16 +102,14 @@ def showLevels(band_levels, fm, fl_selected_bands, fh_selected_bands):
 
     # Personalizar la barra de estado para mostrar x e y en escala logarítmica
     ax = plt.gca()  # Get Current Axis
-    ax.format_coord = lambda x, y: f"x = {x:.1f} Hz, y = {y:.1f} dB"    # Formato para mostrar Hz y dB
+    ax.format_coord = lambda x, y: f"x = {x:.1f} Hz, y = {y:.1f} dB"  # Formato para mostrar Hz y dB
 
     plt.show()
 
 
 def thirdOctaveFilter(signal_data, fs, selected_bands=[NOMINAL_THIRDOCTAVE_FREC[0], NOMINAL_THIRDOCTAVE_FREC[-1]]):
-    print(signal_data)
 
     b = 3   # Para tercios de octava es igual a 3. Para octavas sería 1.
-
     x = np.arange(-16, 14)  # No incluye el último valor
 
     fm = calcMidFrecuencies(b, x)   # Exact mid-band frecuencies [array]
@@ -134,6 +131,7 @@ def octaveFilter(signal_data, fs, selected_bands=[NOMINAL_OCTAVE_FREC[0], NOMINA
 
     b = 1   # Para tercios de octava es igual a 3. Para octavas sería 1.
     x = np.arange(-5, 5)  # No incluye el último valor
+
     fm = calcMidFrecuencies(b, x)   # Exact mid-band frecuencies [array]
     fl = fm * (G ** (-1/(2 * b)))
     fh = fm * (G ** (1/(2 * b)))

@@ -1,0 +1,8 @@
+DIARIO DEL TFG
+17/01/2025
+    - Menú desplegable para selecicionar las bandas a filtrar
+        - ttk.Combobox(state="readonly", values=["valor1", "valor2", ...]) 
+        - readonly para que el usuario solo lea y seleccione y no pueda escribir valores.
+        - values para los valores que muestra las listas. 
+
+    CONSEGUIDO

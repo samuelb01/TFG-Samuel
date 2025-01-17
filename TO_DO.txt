@@ -1,6 +1,10 @@
 PARA HACER:
+    - SELECCIONAR BANDAS!!
+    - Reproducción en tiempo real
     - Ganancia y atenuación a la entrada
     - Ecualización de las bandas
-    - Reproducción en tiempo real
     - Ecualizaciones predefinidas
-    
+
+
+    3382 iso -> TR
+    AISLAMIENTO NORMA 
