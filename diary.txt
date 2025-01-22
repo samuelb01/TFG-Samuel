@@ -6,3 +6,16 @@ DIARIO DEL TFG
         - values para los valores que muestra las listas. 
 
     CONSEGUIDO
+
+22/01/2025
+    - He modificado los desplegables combobox para asignarles una función que se llame cada vez 
+        que se marque un valor de banda a filtrar, para poder modificar la otra bandade corte y no poder
+        hacer que f_low > f_high y viceversa.
+        - He usado tk.comboboc.bind("<<ComboboxSelected>>, function)
+
+    - He creado una función que comprueba que todos los botones necesarios estén pulsados para ejecutar el fitlrado
+    - Cuando se pulsa cualquier boton o se marca un valor en el desplegable se llama a check_conditions()
+    - Cunado se pulsa el desplegable se actualiza las listas para poder seleccionar bandas gracias a postcommand
+    - cuando se pulsa un valor del desplegable se comprueban las condiciones
+
+    - Tengo que hacer que cuando cambio de tipo de filtro los desplegables cambien a estar vacíos

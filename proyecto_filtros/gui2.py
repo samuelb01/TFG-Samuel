@@ -12,15 +12,34 @@ from noise_generator import generate_white_noise, generate_pink_noise    # Impor
 # Parámetros para generar ruidos
 DURATION = 60   # Duración del audio a crear
 SAMPLE_RATE = 48000 # Frecuencia de muestreo
+NOMINAL_THIRDOCTAVE_FREC = [25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400,
+                             500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000,
+                               6300, 8000, 10000, 12500, 16000, 20000]
+NOMINAL_OCTAVE_FREC = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 
+# Activar botón de filtrado
+def check_conditions(event=None):
+    if all([
+        noise_type.get() != "",
+        filter_type.get() != "",
+        combo_low_freq.get() != "",
+        combo_high_freq.get() != ""
+    ]):
+        btn_01["state"] = "normal"
 
+    else:
+        btn_01["state"] = "disabled"
+
+# Realiza el filtrado
 def apply_filter():
+
     # Obtener valores de la variable actual del ruido y del tipo de filtro
     selected_noise = noise_type.get()
     selected_filter = filter_type.get()
-
+    bandas_a_filtrar = [int(combo_low_freq.get()), int(combo_high_freq.get())]
+    
     # Decidir tipo de filtro y de ruido para filtrar
-    if selected_noise != "" and selected_filter != "":
+    if selected_noise != "" and selected_filter != "" and bandas_a_filtrar != "":
 
         if selected_noise == "WHITE NOISE": # RUIDO BLANCO
             noise_data = generate_white_noise(DURATION, SAMPLE_RATE)
@@ -30,14 +49,49 @@ def apply_filter():
             
 
         if selected_filter == "1/1":    # 1/1 OCTAVA
-            octaveFilter(noise_data, SAMPLE_RATE)
+            octaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
 
         elif selected_filter == "1/3":  # 1/3 OCTAVA
-            thirdOctaveFilter(noise_data, SAMPLE_RATE)
+            thirdOctaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
 
     # Muestra ventana de error si no hay ruido y/o filtro seleccionado
     else:
         messagebox.showerror("Advertencia", "Debe seleccionar un tipo de filtro y de ruido")
+
+
+def change_bands():
+    """
+    Modifica dinámicamente las bandas seleccionables según el tipo de filtro elegido.
+
+    Returns:
+        list: Señal de ruido rosa.
+    """
+    selected_filter = filter_type.get()
+
+    if selected_filter == "1/3":
+        bands = NOMINAL_THIRDOCTAVE_FREC
+        
+    elif selected_filter == "1/1":
+        bands = NOMINAL_OCTAVE_FREC
+
+    return bands
+    combo_low_freq["values"] = bands
+    combo_high_freq["values"] = bands
+
+
+def update_bands():
+    bands = change_bands()
+    fl = combo_low_freq.get()
+    fh = combo_high_freq.get()
+
+    if fl != "":
+        combo_high_freq["values"] = bands[bands.index(float(fl)):]
+    if fh != "":
+        combo_low_freq["values"] = bands[:bands.index(float(fh))+1]
+    
+    else:
+        combo_low_freq["values"] = bands
+        combo_high_freq["values"] = bands
 
 
 # Configuración principal de la ventana
@@ -55,50 +109,41 @@ frm_options.grid(padx=10, pady=10)
 
 # Selección de ruido
 ttk.Label(frm_options, text="Seleccione el tipo de ruido").grid()
-radio_btn_pink = ttk.Radiobutton(frm_options, text="Ruido rosa", variable=noise_type, value="PINK NOISE")    # Crear botón para ruido rosa
+radio_btn_pink = ttk.Radiobutton(frm_options, text="Ruido rosa", variable=noise_type, value="PINK NOISE", command=check_conditions)    # Crear botón para ruido rosa
 radio_btn_pink.grid()
-radio_btn_white = ttk.Radiobutton(frm_options, text="Ruido blanco", variable=noise_type, value="WHITE NOISE")    # Crear botón para ruido blanco
+radio_btn_white = ttk.Radiobutton(frm_options, text="Ruido blanco", variable=noise_type, value="WHITE NOISE", command=check_conditions)    # Crear botón para ruido blanco
 radio_btn_white.grid()
 
 # Selección de tipo de filtro
 ttk.Label(frm_options, text="Seleccione el tipo de filtro").grid()
-radio_btn_pink = ttk.Radiobutton(frm_options, text="Octavas", variable=filter_type, value="1/1")    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_white = ttk.Radiobutton(frm_options, text="Tercios de octavas", variable=filter_type, value="1/3")    # Crear botón para ruido blanco
-radio_btn_white.grid()
+radio_btn_octave = ttk.Radiobutton(frm_options, text="Octavas", variable=filter_type, value="1/1", command=lambda:[change_bands(), check_conditions()])    # Crear botón para ruido rosa
+radio_btn_octave.grid()
+radio_btn_third_octave = ttk.Radiobutton(frm_options, text="Tercios de octavas", variable=filter_type, value="1/3", command=lambda:[change_bands(), check_conditions()])    # Crear botón para ruido blanco
+radio_btn_third_octave.grid()
 
 
+# Selección de las bandas
+ttk.Label(frm_options, text="Seleccione las bandas a filtrar").grid()
+combo_low_freq = ttk.Combobox(
+    state="readonly",
+    postcommand=update_bands
+)
+combo_low_freq.grid()
+combo_low_freq.bind("<<ComboboxSelected>>", check_conditions)
 
-ttk.Label(frm_options, text="Seleccione la freceucnia de inicio").grid()
-radio_btn_31_5 = ttk.Radiobutton(frm_options, text="31.5", variable=filter_type, value=31.5)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_63 = ttk.Radiobutton(frm_options, text="63", variable=filter_type, value=63)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_125 = ttk.Radiobutton(frm_options, text="31.5", variable=filter_type, value=31.5)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_31_5 = ttk.Radiobutton(frm_options, text="125", variable=filter_type, value=125)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_31_5 = ttk.Radiobutton(frm_options, text="31.5", variable=filter_type, value=31.5)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_31_5 = ttk.Radiobutton(frm_options, text="31.5", variable=filter_type, value=31.5)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_31_5 = ttk.Radiobutton(frm_options, text="31.5", variable=filter_type, value=31.5)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_31_5 = ttk.Radiobutton(frm_options, text="31.5", variable=filter_type, value=31.5)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_31_5 = ttk.Radiobutton(frm_options, text="31.5", variable=filter_type, value=31.5)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
-radio_btn_31_5 = ttk.Radiobutton(frm_options, text="31.5", variable=filter_type, value=31.5)    # Crear botón para ruido rosa
-radio_btn_pink.grid()
+combo_high_freq = ttk.Combobox(
+    state="readonly",
+    postcommand=update_bands
+)
+combo_high_freq.grid()
+combo_high_freq.bind("<<ComboboxSelected>>", check_conditions)
 
-
-
-
-[31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 
 # Realizar el filtro
-btn_01 = ttk.Button(frm_options, text="APLICAR EL FILTRO", command=lambda: apply_filter())
+btn_01 = ttk.Button(frm_options, text="APLICAR EL FILTRO", command=lambda: apply_filter(), state="disabled")
 btn_01.grid()
+
+
 
 # Bucle principal de la aplicación
 root.mainloop()
