@@ -1,12 +1,16 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import os
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import ttk, messagebox
+
+import pyaudio
+import threading
 
 import numpy as np
-import matplotlib.pyplot as plt
 
-from filters3 import (
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+from filters4 import (
     thirdOctaveFilter,
     octaveFilter,
 )  # Importar las funciones necesarias
@@ -16,7 +20,7 @@ from noise_generator import (
 )  # Importar funciones para crear ruidos
 
 # Parámetros para generar ruidos
-DURATION = 60  # Duración del audio a crear
+DURATION = 15  # Duración del audio a crear
 SAMPLE_RATE = 48000  # Frecuencia de muestreo
 NOMINAL_THIRDOCTAVE_FREC = [
     25,
@@ -60,15 +64,30 @@ class App:
         self.root.title("Ecualizador Gráfico")  # Título de la ventana
         self.root.geometry("900x500")  # Tamaño de la ventana
 
-        # Variable para el tipo de ruido elegido
+        # Variables de control
         self.noise_type = tk.StringVar()
         self.filter_type = tk.StringVar()
         self.combo_low_freq = ttk.Combobox()
         self.combo_high_freq = ttk.Combobox()
+        self.btn_apply_filter = ttk.Button()
+        self.btn_stop = ttk.Button()
+
+        # Variables de control (hilos de ejecución)
+        self.noise_thread = None
+        self.control_noise_event = threading.Event()
+
+        # Variables una vez filtrado
+        self.filtered_noise = None
+        self.band_levels = None
+        self.fm = None
+        self.fl_selected_bands = None
+        self.fh_selected_bands = None
 
         # Marco para agrupar los widgets
         self.frm_options = ttk.Frame(self.root, padding=10)
         self.frm_options.grid(padx=10, pady=10)
+
+        # self.create_plot()
 
     # Activar botón de filtrado
     def check_conditions(self, event=None):
@@ -80,7 +99,12 @@ class App:
                 self.combo_high_freq.get() != "",
             ]
         ):
-            self.btn_01.state(["!disabled"])
+            self.btn_apply_filter.state(["!disabled"])
+
+    # Vaciar los valores de las bandas de frecuencias si se cambia de filtro
+    def clear_bands(self):
+        self.combo_low_freq.set("")
+        self.combo_high_freq.set("")
 
     def change_bands(self):
         """
@@ -89,12 +113,11 @@ class App:
         Returns:
             list: Señal de ruido rosa.
         """
-        selected_filter = self.filter_type.get()
 
-        if selected_filter == "1/3":
+        if self.filter_type.get() == "1/3":
             bands = NOMINAL_THIRDOCTAVE_FREC
 
-        elif selected_filter == "1/1":
+        elif self.filter_type.get() == "1/1":
             bands = NOMINAL_OCTAVE_FREC
 
         return bands
@@ -123,12 +146,14 @@ class App:
     # Realiza el filtrado
     def apply_filter(self):
 
+        self.stop_noise()  # Verificar si el hilo de reproducción está activo y si lo está lo apaga
+
         # Obtener valores de la variable actual del ruido y del tipo de filtro
         selected_noise = self.noise_type.get()
         selected_filter = self.filter_type.get()
         bandas_a_filtrar = [
-            int(self.combo_low_freq.get()),
-            int(self.combo_high_freq.get()),
+            float(self.combo_low_freq.get()),
+            float(self.combo_high_freq.get()),
         ]
 
         # Decidir tipo de filtro y de ruido para filtrar
@@ -145,10 +170,16 @@ class App:
                 noise_data = generate_pink_noise(DURATION, SAMPLE_RATE)
 
             if selected_filter == "1/1":  # 1/1 OCTAVA
-                octaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
+                self.filtered_noise, self.band_levels, self.fm, self.fl_selected_bands, self.fh_selected_bands = octaveFilter(
+                    noise_data, SAMPLE_RATE, bandas_a_filtrar
+                )
 
             elif selected_filter == "1/3":  # 1/3 OCTAVA
-                thirdOctaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
+                self.filtered_noise, self.band_levels, self.fm, self.fl_selected_bands, self.fh_selected_bands = thirdOctaveFilter(
+                    noise_data, SAMPLE_RATE, bandas_a_filtrar
+                )
+
+            self.create_plot()
 
         # Muestra ventana de error si no hay ruido y/o filtro seleccionado
         else:
@@ -156,6 +187,88 @@ class App:
                 "Advertencia",
                 "Debe seleccionar un tipo de filtro, de ruido y bandas a filtrar",
             )
+
+    def start_noise_thread(self):  # Iniciar hilo para reproducir el ruido
+        self.stop_noise()  # Verificar si el hilo de reproducción está activo y si lo está lo apaga
+
+        self.control_noise_event.clear()  # Limpia el evento de detención
+
+        self.noise_thread = threading.Thread(
+            target=self.play_noise,  # Función que reproduce el ruido
+            daemon=True,  # Hilo se detendrá si la ventana principal se cierra
+        )  # Hilo para reproducir el ruido filtrado
+
+        self.noise_thread.start()  # Iniciar el nuevo hilo
+
+    def stop_noise(self):
+        # Si el hilo está activo y en ejecución, se detiene
+        if self.noise_thread and self.noise_thread.is_alive():
+            self.control_noise_event.set() # Establecer evento de detención en activo
+            self.noise_thread.join() # Esperar a que el hilo termine
+            self.noise_thread = None # Reiniciar el hilo
+
+    def play_noise(self):  # Reproducir el ruido filtrado
+
+        p = pyaudio.PyAudio()  # Inicializar PyAudio
+        stream = p.open(
+            format=pyaudio.paInt16,  # Formato de audio
+            channels=1,  # 1 = Mono
+            rate=SAMPLE_RATE,  # Frecuencia de muestreo
+            output=True,  # Salida de audio
+        )  # Abrir stream de audio
+
+        chunk = 1024  # Tamaño del chunk
+        start = 0  # Inicio de la reproducción
+
+        while not self.control_noise_event.is_set() and start < len(
+            self.filtered_noise
+        ):  # Mientras el evento no esté activado
+            end = start + chunk  # Fin de la reproducción
+            stream.write(
+                self.filtered_noise[start:end].astype(np.int16).tobytes()
+            )  # Reproducir audio
+            start = end  # Actualizar inicio de la reproducción
+
+        stream.stop_stream()  # Detener stream
+        stream.close()  # Cerrar stream
+        p.terminate()  # Cerrar PyAudio
+
+    def create_plot(self):
+        # Decidir qué frecuencias nominales utilizar
+        if len(self.fm) == len(NOMINAL_THIRDOCTAVE_FREC):
+            nominal_freq = NOMINAL_THIRDOCTAVE_FREC
+
+        elif len(self.fm) == len(NOMINAL_OCTAVE_FREC):
+            nominal_freq = NOMINAL_OCTAVE_FREC
+
+        # Crear una figura de Matplotlib sin especificar dpi
+        self.figure = Figure(figsize=(7, 5)) 
+        self.ax = self.figure.add_subplot(111)
+        self.ax.set_title("Niveles por bandas")
+
+        # Graficar niveles por bandas con barras uniformes
+        widths = np.array(self.fh_selected_bands) - np.array(self.fl_selected_bands) # Calcular ancho de las barras en escala logarítmica
+        self.ax.bar(self.fl_selected_bands, self.band_levels, width=widths, align='edge', color='skyblue', edgecolor='black')
+        self.ax.set_xscale('log')
+        self.ax.set_xlabel('Frecuencia (Hz)')
+        self.ax.set_ylabel('Nivel (dB)')
+
+
+        # Personalizar el eje X para mostrar todas las frecuencias centrales
+        self.ax.set_xticks(self.fm)
+        self.ax.set_xticklabels([f"{int(freq)} Hz" if freq >= 100 else f"{freq:.1f} Hz" for freq in nominal_freq], rotation=45)
+
+        # Agregar la cuadrícula
+        self.ax.grid(True, which="both", linestyle='--', linewidth=0.5)
+        self.figure.tight_layout()
+
+        # Personalizar la barra de estado para mostrar x e y en escala logarítmica
+        self.ax.format_coord = lambda x, y: f"x = {x:.1f} Hz, y = {y:.1f} dB"  # Formato para mostrar Hz y dB
+
+        # Crear un lienzo de Tkinter para la figura de Matplotlib
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self.root) 
+        self.canvas.draw()
+        self.canvas.get_tk_widget().grid(row=0, column=1, padx=10, pady=10) # Mostrar el lienzo en la ventana
 
     def create_widgets(self):
 
@@ -188,6 +301,7 @@ class App:
             variable=self.filter_type,
             value="1/1",
             command=lambda: [
+                self.clear_bands(),
                 self.change_bands(),
                 self.combo_low_freq.state(["!disabled"]),
                 self.combo_high_freq.state(["!disabled"]),
@@ -202,9 +316,10 @@ class App:
             variable=self.filter_type,
             value="1/3",
             command=lambda: [
+                self.clear_bands(),
                 self.change_bands(),
                 self.combo_low_freq.state(["!disabled"]),
-                self.combo_high_freq(["!disabled"]),
+                self.combo_high_freq.state(["!disabled"]),
                 self.check_conditions(),
             ],
         )  # Crear botón para tercios de octavas
@@ -229,22 +344,33 @@ class App:
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
         # Realizar el filtro
-        btn_01 = ttk.Button(
+        self.btn_apply_filter = ttk.Button(
             self.frm_options,
             text="APLICAR EL FILTRO",
-            command=lambda: self.apply_filter(),
+            command=lambda: [
+                self.apply_filter(),
+                self.check_conditions(),
+            ],
             state="disabled",
         )
-        btn_01.grid()
+        self.btn_apply_filter.grid()
 
         # Botón de reproducción
-        btn_02 = ttk.Button(
+        btn_play_noise = ttk.Button(
             self.frm_options,
             text="REPRODUCIR",
-            command=lambda: self.play_noise(),
-            state="disabled",
+            command=lambda: self.start_noise_thread(),
         )
-        btn_02.grid()
+        btn_play_noise.grid()
+
+        # Botón STOP
+        self.btn_stop = ttk.Button(
+            self.frm_options,
+            text="STOP REPRODUCCIÓN",
+            command=lambda: self.control_noise_event.set(),
+            state="!disbaled",
+        )
+        self.btn_stop.grid()
 
 
 app = App()

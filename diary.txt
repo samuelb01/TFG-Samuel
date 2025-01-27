@@ -1,4 +1,5 @@
 DIARIO DEL TFG
+-> Resto de días previos los tengo en un cuaderno físico
 17/01/2025
     - Menú desplegable para selecicionar las bandas a filtrar
         - ttk.Combobox(state="readonly", values=["valor1", "valor2", ...]) 
@@ -9,7 +10,7 @@ DIARIO DEL TFG
 
 22/01/2025
     - He modificado los desplegables combobox para asignarles una función que se llame cada vez 
-        que se marque un valor de banda a filtrar, para poder modificar la otra bandade corte y no poder
+        que se marque un valor de banda a filtrar, para poder modificar la otra banda de corte y no poder
         hacer que f_low > f_high y viceversa.
         - He usado tk.comboboc.bind("<<ComboboxSelected>>, function)
 
@@ -19,3 +20,39 @@ DIARIO DEL TFG
     - cuando se pulsa un valor del desplegable se comprueban las condiciones
 
     - Tengo que hacer que cuando cambio de tipo de filtro los desplegables cambien a estar vacíos
+
+23/01/2025
+    - He modificado para que los desplegables se desbloqueen cuando se marqque un filtro, y para que no se muestren
+        fs>fl y viceversa.
+    - He modificado el código para ponerlo como programación orientada a objetos. -> Clase App
+    - Reproduce el audio filtrado gracias a la libreria Pyaudio
+    - He cambiado filters4 para que no mmuestre la gráfica y retorne la combinacion de las bandas (filtered_signals)
+    - He empezado a agregar hilos al programa para poder pausar la reproducción y pararla (threading)
+        - No he conseguido que al pulsar el botón de reproducción de corte el audio y se reinicie
+
+
+27/01/2025
+    - He creado un hilo que se encargue de reproducir el ruido 
+        - self.noise_thread = None -> Lo declaro vacio
+    - He creado un evento que cuando se activa detiene la reproducción
+        - self.control_noise_event = threading.Event() -> De clase evento
+    - He creado una función que se activa al dar al botón de reproducir, que se encarga
+        de crear el hilo que ejecuta la reproducción de ruido, primero cmoprueba si existe ya el hilo está "vivo",
+        en caso de estarlo se activa el evento de detención, se espera a que el hilo termine y se reinicia.
+    - La función play_noise() se encarga de reproducir el ruido una vez se pulsa el botón.
+        - Para poder detener la reproducción del ruido reproduzco con la biblioteca PyAudio bloques de 1024 muestras 
+            del array filtered_noise, he usado 1024 porque proporciona buen equilibrio entre latencia y rendimiento, 
+            ya que he investigado y he encontrado que si el bloque es muy pequeño el sistema tiene que procesar y enviar datos con 
+            mucha frecuencia, y si es muy grande se puede percibir la latencia del audio si lo corto, lo que no es deseable para aplicaciones
+            en tiempo real.
+
+            También por compatibilidad, ya que he encontrado que muchos sistemas y bibliotecas de audio están optimmizadas para 
+            trabajar con tamaños de chunks que son potencias de 2
+
+    - Si se está reproduciendo ya un ruido y cambio las bandas y aplico un filtro, se comrpueba primero si existe el hilo y si está "vivo", si 
+        lo está se resetea y se para
+
+    - Lo próximo que quiero hacer es mirar bien la norma para las atenuaciones que debetener el filtro, ya que 
+        creo que no se reproduce bien el audio, ya que se escucha un poco raro. Creo que se debe a esto. También creo que pasa algo extraño y que 
+        si aplico el filtro seguido varía a veces demasiado.
+

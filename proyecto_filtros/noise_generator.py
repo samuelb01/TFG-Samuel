@@ -1,4 +1,5 @@
 import numpy as np
+import pyaudio
 
 def generate_white_noise(duration, sample_rate):
     """
@@ -60,3 +61,44 @@ def generate_pink_noise(duration, sample_rate):
     pink_noise *= 32767 / np.max(np.abs(pink_noise))
     
     return pink_noise.astype(np.int16)
+
+
+
+
+
+def play_audio(data, sample_rate):
+    """
+    Reproduce audio en tiempo real.
+    
+    Args:
+        data (np.ndarray): Señal de audio.
+        sample_rate (int): Frecuencia de muestreo en Hz.
+    """
+    # Inicializar PyAudio
+    p = pyaudio.PyAudio()
+
+    # Abrir stream de audio
+    stream = p.open(
+        format=pyaudio.paInt16,
+        channels=1,
+        rate=sample_rate,
+        output=True
+    )
+
+    # Reproducir audio
+    stream.write(data.tobytes())
+
+    # Cerrar stream
+    stream.stop_stream()
+    stream.close()
+
+    # Cerrar PyAudio
+    p.terminate
+
+
+
+
+
+# ruido = generate_white_noise(5, 48000)
+# ruidorosa = generate_white_noise(5, 48000)
+# play_audio(ruidorosa, 48000)

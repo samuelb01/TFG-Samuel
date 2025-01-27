@@ -1,5 +1,5 @@
 PARA HACER:
-    - SELECCIONAR BANDAS!!
+    - SELECCIONAR BANDAS!! DONE
     - Reproducción en tiempo real
     - Ganancia y atenuación a la entrada
     - Ecualización de las bandas
