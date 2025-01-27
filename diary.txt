@@ -52,6 +52,8 @@ DIARIO DEL TFG
     - Si se está reproduciendo ya un ruido y cambio las bandas y aplico un filtro, se comrpueba primero si existe el hilo y si está "vivo", si 
         lo está se resetea y se para
 
+    - He añadido una ventana de tkinter en la que se dibuja un Figura de la librería matplotlib, y que va cambiando cada vez que se realiza un nuevo filtro.
+
     - Lo próximo que quiero hacer es mirar bien la norma para las atenuaciones que debetener el filtro, ya que 
         creo que no se reproduce bien el audio, ya que se escucha un poco raro. Creo que se debe a esto. También creo que pasa algo extraño y que 
         si aplico el filtro seguido varía a veces demasiado.
