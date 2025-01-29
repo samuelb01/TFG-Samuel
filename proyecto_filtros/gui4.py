@@ -170,14 +170,22 @@ class App:
                 noise_data = generate_pink_noise(DURATION, SAMPLE_RATE)
 
             if selected_filter == "1/1":  # 1/1 OCTAVA
-                self.filtered_noise, self.band_levels, self.fm, self.fl_selected_bands, self.fh_selected_bands = octaveFilter(
-                    noise_data, SAMPLE_RATE, bandas_a_filtrar
-                )
+                (
+                    self.filtered_noise,
+                    self.band_levels,
+                    self.fm,
+                    self.fl_selected_bands,
+                    self.fh_selected_bands,
+                ) = octaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
 
             elif selected_filter == "1/3":  # 1/3 OCTAVA
-                self.filtered_noise, self.band_levels, self.fm, self.fl_selected_bands, self.fh_selected_bands = thirdOctaveFilter(
-                    noise_data, SAMPLE_RATE, bandas_a_filtrar
-                )
+                (
+                    self.filtered_noise,
+                    self.band_levels,
+                    self.fm,
+                    self.fl_selected_bands,
+                    self.fh_selected_bands,
+                ) = thirdOctaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
 
             self.create_plot()
 
@@ -203,9 +211,9 @@ class App:
     def stop_noise(self):
         # Si el hilo está activo y en ejecución, se detiene
         if self.noise_thread and self.noise_thread.is_alive():
-            self.control_noise_event.set() # Establecer evento de detención en activo
-            self.noise_thread.join() # Esperar a que el hilo termine
-            self.noise_thread = None # Reiniciar el hilo
+            self.control_noise_event.set()  # Establecer evento de detención en activo
+            self.noise_thread.join()  # Esperar a que el hilo termine
+            self.noise_thread = None  # Reiniciar el hilo
 
     def play_noise(self):  # Reproducir el ruido filtrado
 
@@ -242,33 +250,51 @@ class App:
             nominal_freq = NOMINAL_OCTAVE_FREC
 
         # Crear una figura de Matplotlib sin especificar dpi
-        self.figure = Figure(figsize=(7, 5)) 
+        self.figure = Figure(figsize=(7, 5))
         self.ax = self.figure.add_subplot(111)
         self.ax.set_title("Niveles por bandas")
 
         # Graficar niveles por bandas con barras uniformes
-        widths = np.array(self.fh_selected_bands) - np.array(self.fl_selected_bands) # Calcular ancho de las barras en escala logarítmica
-        self.ax.bar(self.fl_selected_bands, self.band_levels, width=widths, align='edge', color='skyblue', edgecolor='black')
-        self.ax.set_xscale('log')
-        self.ax.set_xlabel('Frecuencia (Hz)')
-        self.ax.set_ylabel('Nivel (dB)')
-
+        widths = np.array(self.fh_selected_bands) - np.array(
+            self.fl_selected_bands
+        )  # Calcular ancho de las barras en escala logarítmica
+        self.ax.bar(
+            self.fl_selected_bands,
+            self.band_levels,
+            width=widths,
+            align="edge",
+            color="skyblue",
+            edgecolor="black",
+        )
+        self.ax.set_xscale("log")
+        self.ax.set_xlabel("Frecuencia (Hz)")
+        self.ax.set_ylabel("Nivel (dB)")
 
         # Personalizar el eje X para mostrar todas las frecuencias centrales
         self.ax.set_xticks(self.fm)
-        self.ax.set_xticklabels([f"{int(freq)} Hz" if freq >= 100 else f"{freq:.1f} Hz" for freq in nominal_freq], rotation=45)
+        self.ax.set_xticklabels(
+            [
+                f"{int(freq)} Hz" if freq >= 100 else f"{freq:.1f} Hz"
+                for freq in nominal_freq
+            ],
+            rotation=45,
+        )
 
         # Agregar la cuadrícula
-        self.ax.grid(True, which="both", linestyle='--', linewidth=0.5)
+        self.ax.grid(True, which="both", linestyle="--", linewidth=0.5)
         self.figure.tight_layout()
 
         # Personalizar la barra de estado para mostrar x e y en escala logarítmica
-        self.ax.format_coord = lambda x, y: f"x = {x:.1f} Hz, y = {y:.1f} dB"  # Formato para mostrar Hz y dB
+        self.ax.format_coord = (
+            lambda x, y: f"x = {x:.1f} Hz, y = {y:.1f} dB"
+        )  # Formato para mostrar Hz y dB
 
         # Crear un lienzo de Tkinter para la figura de Matplotlib
-        self.canvas = FigureCanvasTkAgg(self.figure, master=self.root) 
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self.root)
         self.canvas.draw()
-        self.canvas.get_tk_widget().grid(row=0, column=1, padx=10, pady=10) # Mostrar el lienzo en la ventana
+        self.canvas.get_tk_widget().grid(
+            row=0, column=1, padx=10, pady=10
+        )  # Mostrar el lienzo en la ventana
 
     def create_widgets(self):
 
