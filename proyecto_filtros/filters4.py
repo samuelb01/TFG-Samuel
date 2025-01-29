@@ -49,13 +49,7 @@ FR = 1000  # Reference frequency
 
 
 # --------------------------------------------------------------------------------------------
-def plot_filtered_signals(
-    fl_selected_bands,
-    fh_selected_bands,
-    filtered_signals,
-    combined_signal,
-    title="Niveles Filtrados",
-):
+def plot_filtered_signals(combined_signal):
 
     # Realizar la Transformada de Fourier (FFT) sobre la señal combinada
     N = len(combined_signal)
@@ -90,6 +84,10 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands, N=16):
         w, h = sosfreqz(
             sos, worN=10000, fs=fs
         )  # Respuesta en frecuencia del filtro
+
+        # Reemplazar valores cero por un valor muy pequeño antes de calcular el logaritmo para evitar errores
+        h = np.where(h == 0, 1e-10, h)
+
         plt.plot(
             w, 20 * np.log10(abs(h)), label=f"{f_low:.1f} - {f_high:.1f} Hz"
         )
@@ -186,7 +184,9 @@ def thirdOctaveFilter(
 
     combined_signal = np.sum(filtered_signals, axis=0)
 
-    # plot_filtered_signals(fm, filtered_signals)
+    plot_filtered_signals(filtered_signals[-1])
+
+    plot_filter_response(fs, fl_selected_bands, fh_selected_bands)
 
     return (
         combined_signal,
@@ -231,7 +231,7 @@ def octaveFilter(
 
     plot_filter_response(fs, fl_selected_bands, fh_selected_bands)
 
-    # plot_filtered_signals(fl_selected_bands, fh_selected_bands, filtered_signals, combined_signal)
+    plot_filtered_signals(filtered_signals[-1])
 
     return (
         combined_signal,
@@ -251,5 +251,6 @@ def octaveFilter(
 # thirdOctaveFilter(WHITE_NOISE)
 # thirdOctaveFilter(PINK_NOISE, [500, 16000])
 
+white = generate_white_noise(5, 48000)
 pink = generate_pink_noise(5, 48000)
 octaveFilter(pink, 48000)

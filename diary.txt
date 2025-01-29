@@ -58,3 +58,6 @@ DIARIO DEL TFG
         creo que no se reproduce bien el audio, ya que se escucha un poco raro. Creo que se debe a esto. También creo que pasa algo extraño y que 
         si aplico el filtro seguido varía a veces demasiado.
 
+29/01/2025
+    - He creado dos funciones de momento temporales para representar la señal filtrada en frecuencia para ver cómo se realiazn los filtros y para 
+        ver la respuesta en frecuencia de los filtros usados y poder ver así las atenuaciones relativas y poder comparar con la norma 61260-1:2014
