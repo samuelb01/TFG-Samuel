@@ -82,7 +82,7 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands, N=16):
     for f_low, f_high in zip(fl_selected_bands, fh_selected_bands):
         sos = butter(N, [f_low, f_high], "bandpass", False, "sos", fs)
         w, h = sosfreqz(
-            sos, worN=10000, fs=fs
+            sos, worN=2000, fs=fs
         )  # Respuesta en frecuencia del filtro
 
         # Reemplazar valores cero por un valor muy pequeño antes de calcular el logaritmo para evitar errores
@@ -99,6 +99,32 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands, N=16):
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.legend()
     plt.show()
+
+
+def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands, N=16):
+    green_tick = "\u2705"
+    red_cross = "\u274c"
+
+    # Compara la respuesta del filtro con los límites de atenuación de la norma ISO 61260-1
+    for f_low, f_high in zip(fl_selected_bands, fh_selected_bands):
+        sos = butter(N, [f_low, f_high], 'bandpass', False, 'sos', fs)
+        w, h = sosfreqz(sos, worN=2000, fs=fs)
+        attenuation_db = 20 * np.log10(abs(h))
+
+        # Definir los valores de frecuencia normalizada según la tabla 5.10.2
+        omega_values = [G**-4, G**-3, G**-2, G**-1, 1, G**1, G**2, G**3, G**4]
+        limits_class1 = [70, 60, 40.5, 16.6, -0.4, 16.6, 40.5, 60, 70]
+
+        for omega, limit in zip(omega_values, limits_class1):
+            freq = omega * ((f_low * f_high) ** 0.5) # Frecuencia real basada en la normalización
+            idx = np.argmin(np.abs(w - freq)) # Encuentra la frecuencia más cercana en la respuesta
+            actual_att = attenuation_db[idx]
+
+            if -actual_att >= limit:
+                print(f"{green_tick} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {limit} dB) ")
+            elif -actual_att < limit:
+                print(f"{red_cross} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {limit} dB) ")
+            
 
 
 # ---------------------------------------------------------------------------------------------
@@ -228,6 +254,8 @@ def octaveFilter(
     )
 
     combined_signal = np.sum(filtered_signals, axis=0)
+
+    verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands)
 
     plot_filter_response(fs, fl_selected_bands, fh_selected_bands)
 
