@@ -46,6 +46,7 @@ NOMINAL_THIRDOCTAVE_FREC = [
 NOMINAL_OCTAVE_FREC = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 G = 10 ** (3 / 10)  # Octave frecuency ratio
 FR = 1000  # Reference frequency
+FILTER_ORDER = 16  # Orden del filtro
 
 
 # --------------------------------------------------------------------------------------------
@@ -75,12 +76,12 @@ def plot_filtered_signals(combined_signal):
     plt.show()
 
 
-def plot_filter_response(fs, fl_selected_bands, fh_selected_bands, N=16):
+def plot_filter_response(fs, fl_selected_bands, fh_selected_bands):
     # Grafica la respuesta en frecuencia de los filtros diseñados
     plt.figure(figsize=(10, 6))
 
     for f_low, f_high in zip(fl_selected_bands, fh_selected_bands):
-        sos = butter(N, [f_low, f_high], "bandpass", False, "sos", fs)
+        sos = butter(FILTER_ORDER, [f_low, f_high], "bandpass", False, "sos", fs)
         w, h = sosfreqz(
             sos, worN=2000, fs=fs
         )  # Respuesta en frecuencia del filtro
@@ -101,13 +102,13 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands, N=16):
     plt.show()
 
 
-def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands, N=16):
-    green_tick = "\u2705"
-    red_cross = "\u274c"
+def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands):
+    green_tick = "\u2705" # Unicode para el símbolo de check verde
+    red_cross = "\u274c" # Unicode para el símbolo de cruz roja
 
     # Compara la respuesta del filtro con los límites de atenuación de la norma ISO 61260-1
-    for f_low, f_high in zip(fl_selected_bands, fh_selected_bands):
-        sos = butter(N, [f_low, f_high], 'bandpass', False, 'sos', fs)
+    for i, (f_low, f_high) in enumerate(zip(fl_selected_bands, fh_selected_bands)):
+        sos = butter(FILTER_ORDER, [f_low, f_high], "bandpass", False, "sos", fs)
         w, h = sosfreqz(sos, worN=2000, fs=fs)
         attenuation_db = 20 * np.log10(abs(h))
 
@@ -115,23 +116,30 @@ def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands, N=16):
         omega_values = [G**-4, G**-3, G**-2, G**-1, 1, G**1, G**2, G**3, G**4]
         limits_class1 = [70, 60, 40.5, 16.6, -0.4, 16.6, 40.5, 60, 70]
 
+        print(f'\n\n>>>>> FILTRO {i} <<<<<')
         for omega, limit in zip(omega_values, limits_class1):
-            freq = omega * ((f_low * f_high) ** 0.5) # Frecuencia real basada en la normalización
-            idx = np.argmin(np.abs(w - freq)) # Encuentra la frecuencia más cercana en la respuesta
+            freq = omega * (
+                (f_low * f_high) ** 0.5
+            )  # Frecuencia real basada en la normalización
+            idx = np.argmin(
+                np.abs(w - freq)
+            )  # Encuentra la frecuencia más cercana en la respuesta
             actual_att = attenuation_db[idx]
 
             if -actual_att >= limit:
-                print(f"{green_tick} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {limit} dB) ")
+                print(
+                    f"{green_tick} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {limit} dB) "
+                )
             elif -actual_att < limit:
-                print(f"{red_cross} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {limit} dB) ")
-            
+                print(
+                    f"{red_cross} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {limit} dB) "
+                )
 
 
 # ---------------------------------------------------------------------------------------------
 
 
 def calcButterFilter(fs, signal_data, fl_selected_bands, fh_selected_bands):
-    N = 16  # Orden del filtro
     band_levels = []  # Array con las bandas filtradas
     filtered_signals = np.zeros(
         (len(fl_selected_bands), len(signal_data))
@@ -142,7 +150,7 @@ def calcButterFilter(fs, signal_data, fl_selected_bands, fh_selected_bands):
         zip(fl_selected_bands, fh_selected_bands)
     ):
         sos = butter(
-            N, [f_low, f_High], "bandpass", False, "sos", fs
+            FILTER_ORDER, [f_low, f_High], "bandpass", False, "sos", fs
         )  # Second Order Sections
 
         filtered_signal = sosfilt(
@@ -210,10 +218,6 @@ def thirdOctaveFilter(
 
     combined_signal = np.sum(filtered_signals, axis=0)
 
-    plot_filtered_signals(filtered_signals[-1])
-
-    plot_filter_response(fs, fl_selected_bands, fh_selected_bands)
-
     return (
         combined_signal,
         band_levels,
@@ -255,12 +259,6 @@ def octaveFilter(
 
     combined_signal = np.sum(filtered_signals, axis=0)
 
-    verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands)
-
-    plot_filter_response(fs, fl_selected_bands, fh_selected_bands)
-
-    plot_filtered_signals(filtered_signals[-1])
-
     return (
         combined_signal,
         band_levels,
@@ -281,4 +279,6 @@ def octaveFilter(
 
 white = generate_white_noise(5, 48000)
 pink = generate_pink_noise(5, 48000)
-octaveFilter(pink, 48000)
+combined_signal, band_levels, fm, fl_selected_bands, fh_selected_bands = octaveFilter(pink, 48000)
+
+verify_filter_compliance(48000, fl_selected_bands, fh_selected_bands)
