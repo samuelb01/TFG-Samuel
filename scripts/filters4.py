@@ -1,3 +1,5 @@
+# Autor: Samuel Bellón Elipe
+
 # Funciones relacionadas con el filtrado
 
 import numpy as np
@@ -7,7 +9,18 @@ import matplotlib.pyplot as plt
 
 from noise_generator import generate_white_noise, generate_pink_noise
 
-# import soundfile
+# Importar constantes
+from config import (
+    NOMINAL_THIRDOCTAVE_FREC,
+    NOMINAL_OCTAVE_FREC,
+    G,
+    FR,
+    FILTER_ORDER,
+    EPSILON,
+    ACCEPTANCE_LIMITS_CLASS1,
+    ACCEPTANCE_LIMITS_CLASS2
+)
+
 
 
 # CONSTANTES
@@ -46,7 +59,6 @@ NOMINAL_THIRDOCTAVE_FREC = [
 NOMINAL_OCTAVE_FREC = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 G = 10 ** (3 / 10)  # Octave frecuency ratio
 FR = 1000  # Reference frequency
-FILTER_ORDER = 16  # Orden del filtro
 
 
 # --------------------------------------------------------------------------------------------
@@ -81,13 +93,15 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands):
     plt.figure(figsize=(10, 6))
 
     for f_low, f_high in zip(fl_selected_bands, fh_selected_bands):
-        sos = butter(FILTER_ORDER, [f_low, f_high], "bandpass", False, "sos", fs)
+        sos = butter(
+            FILTER_ORDER, [f_low, f_high], "bandpass", False, "sos", fs
+        )
         w, h = sosfreqz(
-            sos, worN=2000, fs=fs
+            sos, worN=10000, fs=fs
         )  # Respuesta en frecuencia del filtro
 
         # Reemplazar valores cero por un valor muy pequeño antes de calcular el logaritmo para evitar errores
-        h = np.where(h == 0, 1e-10, h)
+        h = np.where(h == 0, EPSILON, h)
 
         plt.plot(
             w, 20 * np.log10(abs(h)), label=f"{f_low:.1f} - {f_high:.1f} Hz"
@@ -103,39 +117,77 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands):
 
 
 def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands):
-    green_tick = "\u2705" # Unicode para el símbolo de check verde
-    red_cross = "\u274c" # Unicode para el símbolo de cruz roja
+    filter_compliance_check = True
+    green_tick = "\u2705"  # Unicode para el símbolo de check verde
+    red_cross = "\u274c"  # Unicode para el símbolo de cruz roja
+
+    print(f'EL ORDEN DE LOS FILROS ES -> {FILTER_ORDER}')
 
     # Compara la respuesta del filtro con los límites de atenuación de la norma ISO 61260-1
-    for i, (f_low, f_high) in enumerate(zip(fl_selected_bands, fh_selected_bands)):
-        sos = butter(FILTER_ORDER, [f_low, f_high], "bandpass", False, "sos", fs)
-        w, h = sosfreqz(sos, worN=2000, fs=fs)
+    for i, (f_low, f_high) in enumerate(
+        zip(fl_selected_bands, fh_selected_bands)
+    ):
+        sos = butter(
+            FILTER_ORDER, [f_low, f_high], "bandpass", False, "sos", fs
+        )
+        w, h = sosfreqz(sos, worN=10000, fs=fs)
+        # Reemplazar valores cero por un valor muy pequeño antes de calcular el logaritmo para evitar errores
+        h = np.where(h == 0, EPSILON, h)
         attenuation_db = 20 * np.log10(abs(h))
-
-        # Definir los valores de frecuencia normalizada según la tabla 5.10.2
-        omega_values = [G**-4, G**-3, G**-2, G**-1, 1, G**1, G**2, G**3, G**4]
-        limits_class1 = [70, 60, 40.5, 16.6, -0.4, 16.6, 40.5, 60, 70]
-
-        print(f'\n\n>>>>> FILTRO {i} <<<<<')
-        for omega, limit in zip(omega_values, limits_class1):
+        
+        print(f"\n\n>>>>> FILTRO {i+1} <<<<<")
+        # Compara la atenuación de la señal filtrada (según respuesta del filtro) con los límites de aceptación de la norma ISO 61260-1
+        for omega, (low_limit, high_limit) in zip(list(ACCEPTANCE_LIMITS_CLASS1.keys()), list(ACCEPTANCE_LIMITS_CLASS1.values())): 
             freq = omega * (
                 (f_low * f_high) ** 0.5
             )  # Frecuencia real basada en la normalización
             idx = np.argmin(
                 np.abs(w - freq)
-            )  # Encuentra la frecuencia más cercana en la respuesta
+            )  # Encuentra la frecuencia más cercana en la respuesta del filtro
             actual_att = attenuation_db[idx]
 
-            if -actual_att >= limit:
+
+            if low_limit <= -actual_att < high_limit:
                 print(
-                    f"{green_tick} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {limit} dB) "
+                    f"{green_tick} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {low_limit};{high_limit} dB)"
                 )
-            elif -actual_att < limit:
+                pass
+            elif -actual_att < low_limit or -actual_att > high_limit:
                 print(
-                    f"{red_cross} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {limit} dB) "
+                    f"{red_cross} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {low_limit};{high_limit}dB)"
                 )
+                filter_compliance_check = False
+    
+    if filter_compliance_check:
+        print(f"\n\n{green_tick} Todos los filtros cumplen con la norma ISO 61260-1")
+
+    else:
+        print(f"\n\n{red_cross} Al menos un filtro no cumple con la norma ISO 61260-1")
 
 
+def create_acceptance_limits_dicc(b):
+    new_dicc = {}
+    if b != 1:
+        keys = list(ACCEPTANCE_LIMITS_CLASS1.keys())
+        for key, value in ACCEPTANCE_LIMITS_CLASS1.items():
+            if keys.index(key) < 10:
+                new_key = 1/(1 + (((G**(1/(2*b))-1)/(G**(1/2)-1)) * (key-1)))
+
+            elif keys.index(key) >= 10:
+                # Norma ISO 61260-1 apartado 5.10.3 -> High-frequency fractional-octave-band normalized frequency
+                new_key = 1 + (((G**(1/(2*b))-1)/(G**(1/2)-1)) * (key-1))
+
+            new_dicc[new_key] = value
+
+    print(new_dicc.keys())
+
+            
+
+        
+
+    return "hola"
+
+create_acceptance_limits_dicc(3)
 # ---------------------------------------------------------------------------------------------
 
 
@@ -279,6 +331,9 @@ def octaveFilter(
 
 white = generate_white_noise(5, 48000)
 pink = generate_pink_noise(5, 48000)
-combined_signal, band_levels, fm, fl_selected_bands, fh_selected_bands = octaveFilter(pink, 48000)
+combined_signal, band_levels, fm, fl_selected_bands, fh_selected_bands = (
+    octaveFilter(pink, 48000)
+)
 
-verify_filter_compliance(48000, fl_selected_bands, fh_selected_bands)
+# verify_filter_compliance(48000, fl_selected_bands, fh_selected_bands)
+# plot_filter_response(48000, fl_selected_bands, fh_selected_bands)

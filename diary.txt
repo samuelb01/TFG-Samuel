@@ -59,7 +59,18 @@ DIARIO DEL TFG
         si aplico el filtro seguido varía a veces demasiado.
 
 29/01/2025
-    - He creado dos funciones de momento temporales para representar la señal filtrada en frecuencia para ver cómo se realiazn los filtros y para 
+    - He creado dos funciones de momento temporales para representar la señal filtrada en frecuencia para ver cómo se realizan los filtros y para 
         ver la respuesta en frecuencia de los filtros usados y poder ver así las atenuaciones relativas y poder comparar con la norma 61260-1:2014
 
-    - He añadido unna función que me ayuda a ver si con el orden de filtro elegido se cumple la norma.
+    - He añadido una función que me ayuda a ver si con el orden de filtro elegido se cumple la norma.
+    
+    - He usado sosfreqz() para viusalizar la respuesta del fitlro y así poder también comparar los valores con los límites de aceptación
+        de la atenuación relativa según la norma ISO 61260-1:2014
+    
+    - Solo lo he implementado para octavas y filtros de tipo 1
+
+30/01/2025
+    - He terminado de realizar el bucle que se encarga de verificar los límites, y lo he mejorado añadiendo límites superiores e inferiores en forma de diccionario, asociando
+        a cada omega (key) un valor en forma de array con el límite inferior y superior en dB.
+
+    - Voy a colocar todas las constantes en un archivo .py separado para tnrlas más organizadas (config.py)

@@ -1,3 +1,5 @@
+# Autor: Samuel Bellón Elipe
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -87,7 +89,9 @@ class App:
         self.frm_options = ttk.Frame(self.root, padding=10)
         self.frm_options.grid(padx=10, pady=10)
 
-        # self.create_plot()
+        # Iniciar la app
+        self.create_widgets()
+        self.root.mainloop()
 
     # Activar botón de filtrado
     def check_conditions(self, event=None):
@@ -397,8 +401,3 @@ class App:
             state="!disbaled",
         )
         self.btn_stop.grid()
-
-
-app = App()
-app.create_widgets()
-app.root.mainloop()
