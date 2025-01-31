@@ -11,6 +11,13 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+# Importar constantes a usar
+from config import (
+    DURATION,
+    SAMPLE_RATE,
+    NOMINAL_OCTAVE_FREC,
+    NOMINAL_THIRDOCTAVE_FREC,
+)
 
 from filters4 import (
     thirdOctaveFilter,
@@ -21,58 +28,23 @@ from noise_generator import (
     generate_pink_noise,
 )  # Importar funciones para crear ruidos
 
-# Parámetros para generar ruidos
-DURATION = 15  # Duración del audio a crear
-SAMPLE_RATE = 48000  # Frecuencia de muestreo
-NOMINAL_THIRDOCTAVE_FREC = [
-    25,
-    31.5,
-    40,
-    50,
-    63,
-    80,
-    100,
-    125,
-    160,
-    200,
-    250,
-    315,
-    400,
-    500,
-    630,
-    800,
-    1000,
-    1250,
-    1600,
-    2000,
-    2500,
-    3150,
-    4000,
-    5000,
-    6300,
-    8000,
-    10000,
-    12500,
-    16000,
-    20000,
-]
-NOMINAL_OCTAVE_FREC = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
-
 
 class App:
     def __init__(self):
         # Configuración principal de la ventana
         self.root = tk.Tk()  # Ventana principal de la interfaz
         self.root.title("Ecualizador Gráfico")  # Título de la ventana
-        self.root.geometry("900x500")  # Tamaño de la ventana
+        self.root.geometry("1200x600")  # Tamaño de la ventana
 
         # Variables de control
         self.noise_type = tk.StringVar()
+        self.band_type = tk.StringVar()
         self.filter_type = tk.StringVar()
         self.combo_low_freq = ttk.Combobox()
         self.combo_high_freq = ttk.Combobox()
         self.btn_apply_filter = ttk.Button()
         self.btn_stop = ttk.Button()
+        
 
         # Variables de control (hilos de ejecución)
         self.noise_thread = None
@@ -86,19 +58,31 @@ class App:
         self.fh_selected_bands = None
 
         # Marco para agrupar los widgets
-        self.frm_options = ttk.Frame(self.root, padding=10)
-        self.frm_options.grid(padx=10, pady=10)
+        self.frm_options = ttk.Frame(
+            self.root, padding=10, relief="groove", borderwidth=2
+        )
+        self.frm_options.grid(padx=10, pady=10, row=0, column=0, sticky="n")
+
+        # Marco para el gráfico
+        self.frm_graphic = ttk.Frame(
+            self.root, padding=10, relief="groove", borderwidth=2
+        )
+        self.frm_graphic.grid(padx=10, pady=10, row=0, column=1)
 
         # Iniciar la app
         self.create_widgets()
         self.root.mainloop()
+
+    def activate_filter_buttons(self):
+        self.combo_high_freq.state(["!disabled"])
+        self.combo_low_freq.state(["!disabled"])
 
     # Activar botón de filtrado
     def check_conditions(self, event=None):
         if all(
             [
                 self.noise_type.get() != "",
-                self.filter_type.get() != "",
+                self.band_type.get() != "",
                 self.combo_low_freq.get() != "",
                 self.combo_high_freq.get() != "",
             ]
@@ -118,10 +102,10 @@ class App:
             list: Señal de ruido rosa.
         """
 
-        if self.filter_type.get() == "1/3":
+        if self.band_type.get() == "1/3":
             bands = NOMINAL_THIRDOCTAVE_FREC
 
-        elif self.filter_type.get() == "1/1":
+        elif self.band_type.get() == "1/1":
             bands = NOMINAL_OCTAVE_FREC
 
         return bands
@@ -133,19 +117,31 @@ class App:
         fl = self.combo_low_freq.get()
         fh = self.combo_high_freq.get()
 
-        if fl == "" and fh == "":  # Ninguna seleccionada
-            self.combo_low_freq["values"] = bands
-            self.combo_high_freq["values"] = bands
+        # Ver el tipo de filtro seleccionado
+        filter_type = self.filter_type.get()
 
-        elif fl != "" and fh != "":  # Una de las dos
-            self.combo_high_freq["values"] = bands[bands.index(float(fl)) :]
-            self.combo_low_freq["values"] = bands[: bands.index(float(fh)) + 1]
+        if filter_type != "":
+            if filter_type == "low_pass":
+                self.combo_high_freq.set(bands[-1])
+                self.combo_low_freq["values"] = bands
 
-        # Ambas seleccionadas
-        if fl != "":
-            self.combo_high_freq["values"] = bands[bands.index(float(fl)) :]
-        elif fh != "":
-            self.combo_low_freq["values"] = bands[: bands.index(float(fh)) + 1]
+            elif filter_type == "high_pass":
+                self.combo_high_freq["values"] = bands
+                self.combo_low_freq.set(bands[0])
+
+        # if fl == "" and fh == "":  # Ninguna seleccionada
+        #     self.combo_low_freq["values"] = bands
+        #     self.combo_high_freq["values"] = bands
+
+        # elif fl != "" and fh != "":  # Una de las dos
+        #     self.combo_high_freq["values"] = bands[bands.index(float(fl)) :]
+        #     self.combo_low_freq["values"] = bands[: bands.index(float(fh)) + 1]
+
+        # # Ambas seleccionadas
+        # if fl != "":
+        #     self.combo_high_freq["values"] = bands[bands.index(float(fl)) :]
+        # elif fh != "":
+        #     self.combo_low_freq["values"] = bands[: bands.index(float(fh)) + 1]
 
     # Realiza el filtrado
     def apply_filter(self):
@@ -154,7 +150,7 @@ class App:
 
         # Obtener valores de la variable actual del ruido y del tipo de filtro
         selected_noise = self.noise_type.get()
-        selected_filter = self.filter_type.get()
+        selected_filter = self.band_type.get()
         bandas_a_filtrar = [
             float(self.combo_low_freq.get()),
             float(self.combo_high_freq.get()),
@@ -302,8 +298,10 @@ class App:
 
     def create_widgets(self):
 
-        # Selección de ruido
-        ttk.Label(self.frm_options, text="Seleccione el tipo de ruido").grid()
+        # >>>>> Selección de ruido <<<<<
+        ttk.Label(self.frm_options, text="Seleccione el tipo de ruido:").grid(
+            row=0, sticky="w"
+        )
         radio_btn_pink = ttk.Radiobutton(
             self.frm_options,
             text="Ruido rosa",
@@ -311,7 +309,7 @@ class App:
             value="PINK NOISE",
             command=self.check_conditions,
         )  # Crear botón para ruido rosa
-        radio_btn_pink.grid()
+        radio_btn_pink.grid(row=1, sticky="w")
 
         radio_btn_white = ttk.Radiobutton(
             self.frm_options,
@@ -320,15 +318,18 @@ class App:
             value="WHITE NOISE",
             command=self.check_conditions,
         )  # Crear botón para ruido blanco
-        radio_btn_white.grid()
+        radio_btn_white.grid(row=2, sticky="w")
 
-        # Selección de tipo de filtro
-        ttk.Label(self.frm_options, text="Seleccione el tipo de filtro").grid()
+        # >>>>> Selección de tipo de filtro <<<<<
+        ttk.Label(
+            self.frm_options,
+            text="\nSeleccione el tipo de banda de frecuencia:",
+        ).grid(row=3, sticky="w")
 
         radio_btn_octave = ttk.Radiobutton(
             self.frm_options,
             text="Octavas",
-            variable=self.filter_type,
+            variable=self.band_type,
             value="1/1",
             command=lambda: [
                 self.clear_bands(),
@@ -338,12 +339,12 @@ class App:
                 self.check_conditions(),
             ],
         )  # Crear botón para octavas
-        radio_btn_octave.grid()
+        radio_btn_octave.grid(row=4, sticky="w")
 
         radio_btn_third_octave = ttk.Radiobutton(
             self.frm_options,
             text="Tercios de octavas",
-            variable=self.filter_type,
+            variable=self.band_type,
             value="1/3",
             command=lambda: [
                 self.clear_bands(),
@@ -353,27 +354,79 @@ class App:
                 self.check_conditions(),
             ],
         )  # Crear botón para tercios de octavas
-        radio_btn_third_octave.grid()
+        radio_btn_third_octave.grid(row=5, sticky="w")
 
-        # Selección de las bandas
+        # >>>>> Selección de tipo de filtro <<<<<
         ttk.Label(
-            self.frm_options, text="Seleccione las bandas a filtrar"
-        ).grid()
-        self.combo_low_freq = ttk.Combobox(
-            state="readonly", postcommand=self.update_bands
+            self.frm_options, text="\nSeleccione el tipo de filtro:"
+        ).grid(row=6, sticky="w")
+        radio_btn_lowpass = ttk.Radiobutton(
+            self.frm_options,
+            text="Filtro paso bajo",
+            variable=self.filter_type,
+            value="low_pass",
+            command=self.update_bands,
+        ).grid(row=7)
+        radio_btn_lowpass.state(["disabled"])
+
+        radio_btn_highpass = ttk.Radiobutton(
+            self.frm_options,
+            text="Filtro paso alto",
+            variable=self.filter_type,
+            value="high_pass",
+            command=self.update_bands,
+        ).grid(row=8)
+        radio_btn_highpass.state(["disabled"])
+
+        radio_btn_bandpass = ttk.Radiobutton(
+            self.frm_options,
+            text="Filtro paso banda",
+            variable=self.filter_type,
+            value="band_pass",
+            command=self.update_bands,
+        ).grid(row=9)
+        radio_btn_bandpass.state(["disabled"])
+
+        radio_btn_notch = ttk.Radiobutton(
+            self.frm_options,
+            text="Filtro notch",
+            variable=self.filter_type,
+            value="notch",
+            command=self.update_bands,
+        ).grid(row=10)
+        radio_btn_notch.state(["disabled"])
+
+        # >>>>> Selección de las bandas <<<<<
+        ttk.Label(
+            self.frm_options, text="\nSeleccione las bandas a filtrar:"
+        ).grid(row=11, sticky="w")
+
+        ttk.Label(self.frm_options, text="Banda inferior").grid(
+            row=12, column=0
         )
-        self.combo_low_freq.grid()
+        ttk.Label(self.frm_options, text="Banda superior").grid(
+            row=12, column=1
+        )
+
+        self.combo_low_freq = ttk.Combobox(
+            self.frm_options, state="readonly", postcommand=self.update_bands
+        )
+        self.combo_low_freq.grid(row=13, column=0, sticky="w")
         self.combo_low_freq.state(["disabled"])
         self.combo_low_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
         self.combo_high_freq = ttk.Combobox(
-            state="readonly", postcommand=self.update_bands
+            self.frm_options, state="readonly", postcommand=self.update_bands
         )
-        self.combo_high_freq.grid()
+        self.combo_high_freq.grid(row=13, column=1, sticky="w")
         self.combo_high_freq.state(["disabled"])
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
-        # Realizar el filtro
+        ttk.Label(self.frm_options, text="\n").grid(
+            row=14
+        )  # Espacio en blanco antes de los botones
+
+        # >>>>> Realizar el filtro <<<<<
         self.btn_apply_filter = ttk.Button(
             self.frm_options,
             text="APLICAR EL FILTRO",
@@ -383,21 +436,21 @@ class App:
             ],
             state="disabled",
         )
-        self.btn_apply_filter.grid()
+        self.btn_apply_filter.grid(row=15, columnspan=2)
 
-        # Botón de reproducción
+        # >>>>> Botón de reproducción <<<<<
         btn_play_noise = ttk.Button(
             self.frm_options,
             text="REPRODUCIR",
             command=lambda: self.start_noise_thread(),
         )
-        btn_play_noise.grid()
+        btn_play_noise.grid(row=16, columnspan=2)
 
-        # Botón STOP
+        # >>>>> Botón STOP <<<<<
         self.btn_stop = ttk.Button(
             self.frm_options,
             text="STOP REPRODUCCIÓN",
             command=lambda: self.control_noise_event.set(),
             state="!disbaled",
         )
-        self.btn_stop.grid()
+        self.btn_stop.grid(row=17, columnspan=2)

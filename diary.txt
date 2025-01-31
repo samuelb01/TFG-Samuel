@@ -77,6 +77,9 @@ DIARIO DEL TFG
 
 31/01/2025
     - He seguido leyendo al norma ISO 61260-1:2014, me han surgido dudas en cuanto a la linalidad del filtro, tengo que seguir mirando.
+
     - He empezado la norma 16283-1:2014 que habla sobre la medición del aislamiento acústico. En el punto 7.2 habla de que el nivel de presión acústica
         promediado energéticamente en el recinto no puede presetnar diferencias en nivel de más de 8dB, y que como esto a veces no se puede conseguir sin dar forma
         a la señal de la fuente, hay que hacer uso de un ecualizador gráfico.
+
+    - He visto que la fuente de CESVA AP602 tiene +-10dB para ecualizar cada banda de tercio de octava
