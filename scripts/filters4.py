@@ -165,29 +165,40 @@ def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands):
         print(f"\n\n{red_cross} Al menos un filtro no cumple con la norma ISO 61260-1")
 
 
-def create_acceptance_limits_dicc(b):
-    new_dicc = {}
+def create_acceptance_limits_dicc(b, class_type=1):
+    
+    # Crea un diccionario con los límites de aceptación de la norma ISO 61260-1 para el tipo de banda de octava seleccionado
     if b != 1:
+        if class_type == 1:
+            acceptance_limits = ACCEPTANCE_LIMITS_CLASS1
+        else:
+            acceptance_limits = ACCEPTANCE_LIMITS_CLASS2
+        new_dicc = {}
+
         keys = list(ACCEPTANCE_LIMITS_CLASS1.keys())
-        for key, value in ACCEPTANCE_LIMITS_CLASS1.items():
-            if keys.index(key) < 10:
-                new_key = 1/(1 + (((G**(1/(2*b))-1)/(G**(1/2)-1)) * (key-1)))
+        items = list(ACCEPTANCE_LIMITS_CLASS1.items())
+        temp_list = [] # Lista temporal para almacenar los valores de las bandas de alta frecuencia
 
-            elif keys.index(key) >= 10:
-                # Norma ISO 61260-1 apartado 5.10.3 -> High-frequency fractional-octave-band normalized frequency
-                new_key = 1 + (((G**(1/(2*b))-1)/(G**(1/2)-1)) * (key-1))
+        # Itera sobre los 10 últimos elementos del diccionario, emepzando por el último
+        for key, value in reversed(items[-10:]): 
 
-            new_dicc[new_key] = value
-
-    print(new_dicc.keys())
-
+            # Norma ISO 61260-1 apartado 5.10.3 y 5.10.4 -> High-frequency and low-frequency fractional-octave-band normalized frequency
+            acceptance_limit = 1 + (((G**(1/(2*b))-1)/(G**(1/2)-1)) * (key-1))
+            new_key_high = acceptance_limit
+            new_key_low = 1/acceptance_limit
             
+            if keys.index(key) == 9: # límites iguales para alta y baja frecuencia
+                new_dicc[acceptance_limit] = value
+            else:
+                new_dicc[new_key_low] = value
+                temp_list.append((new_key_high, value))
 
-        
+        # Recorro inversamente la lista temporal para añadir los valores de alta frecuencia
+        for key, value in reversed(temp_list):
+            new_dicc[key] = value
 
-    return "hola"
+    return new_dicc # Devuelve el diccionario con los valores límites para el tipo de banda de octava seleccionado
 
-create_acceptance_limits_dicc(3)
 # ---------------------------------------------------------------------------------------------
 
 
@@ -228,15 +239,12 @@ def calcMidFrecuencies(b, x):
 
 
 def calcRMS(filtered_values):
-
     # Root Mean Square
     rms_values = []
 
     for filtered in filtered_values:
         rms = np.sqrt(np.mean(filtered**2))
         rms_values.append(rms)
-
-    # rms_values = [np.sqrt(np.mean(filtered ** 2)) for filtered in filtered_values]
 
     return rms_values
 
@@ -278,9 +286,6 @@ def thirdOctaveFilter(
         fh_selected_bands,
     )
 
-    # Se muestran los niveles en dB en una gráfica
-    # showLevels(band_levels, fm, fl_selected_bands, fh_selected_bands)
-
 
 def octaveFilter(
     signal_data,
@@ -319,9 +324,6 @@ def octaveFilter(
         fh_selected_bands,
     )
 
-    # Se muestran los niveles en dB en una gráfica
-    # showLevels(band_levels, fm, fl_selected_bands, fh_selected_bands)
-
 
 # octaveFilter(PINK_NOISE)
 # octaveFilter(WHITE_NOISE)
@@ -329,11 +331,11 @@ def octaveFilter(
 # thirdOctaveFilter(WHITE_NOISE)
 # thirdOctaveFilter(PINK_NOISE, [500, 16000])
 
-white = generate_white_noise(5, 48000)
-pink = generate_pink_noise(5, 48000)
-combined_signal, band_levels, fm, fl_selected_bands, fh_selected_bands = (
-    octaveFilter(pink, 48000)
-)
+# white = generate_white_noise(5, 48000)
+# pink = generate_pink_noise(5, 48000)
+# combined_signal, band_levels, fm, fl_selected_bands, fh_selected_bands = (
+#     octaveFilter(pink, 48000)
+# )
 
 # verify_filter_compliance(48000, fl_selected_bands, fh_selected_bands)
 # plot_filter_response(48000, fl_selected_bands, fh_selected_bands)

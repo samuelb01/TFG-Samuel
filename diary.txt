@@ -64,7 +64,7 @@ DIARIO DEL TFG
 
     - He añadido una función que me ayuda a ver si con el orden de filtro elegido se cumple la norma.
     
-    - He usado sosfreqz() para viusalizar la respuesta del fitlro y así poder también comparar los valores con los límites de aceptación
+    - He usado sosfreqz() para viusalizar la respuesta del filtro y así poder también comparar los valores con los límites de aceptación
         de la atenuación relativa según la norma ISO 61260-1:2014
     
     - Solo lo he implementado para octavas y filtros de tipo 1
@@ -74,3 +74,9 @@ DIARIO DEL TFG
         a cada omega (key) un valor en forma de array con el límite inferior y superior en dB.
 
     - Voy a colocar todas las constantes en un archivo .py separado para tnrlas más organizadas (config.py)
+
+31/01/2025
+    - He seguido leyendo al norma ISO 61260-1:2014, me han surgido dudas en cuanto a la linalidad del filtro, tengo que seguir mirando.
+    - He empezado la norma 16283-1:2014 que habla sobre la medición del aislamiento acústico. En el punto 7.2 habla de que el nivel de presión acústica
+        promediado energéticamente en el recinto no puede presetnar diferencias en nivel de más de 8dB, y que como esto a veces no se puede conseguir sin dar forma
+        a la señal de la fuente, hay que hacer uso de un ecualizador gráfico.
