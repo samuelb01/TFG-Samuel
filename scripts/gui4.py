@@ -116,14 +116,14 @@ class App:
 
         if filter_type != "":
             if filter_type == "low_pass":
-                self.combo_high_freq.set(bands[-1])
-                self.combo_low_freq["values"] = bands
-                self.combo_high_freq.state(["disabled"])
-
-            elif filter_type == "high_pass":
-                self.combo_high_freq["values"] = bands
                 self.combo_low_freq.set(bands[0])
                 self.combo_low_freq.state(["disabled"])
+                self.combo_high_freq["values"] = bands
+
+            elif filter_type == "high_pass":
+                self.combo_high_freq.set(bands[-1])
+                self.combo_high_freq.state(["disabled"])
+                self.combo_low_freq["values"] = bands
 
             elif filter_type == "band_pass":
                 self.update_bandpass(bands, fl, fh)
