@@ -136,6 +136,14 @@ class App:
         """Realiza el filtrado seleccinado"""
         self.stop_noise()  # Verificar si el hilo de reproducción está activo y si lo está lo apaga
 
+        # Obtiene la duración introducida para el audio (por defecto duración en config.py)
+        try:
+            duration = int(self.entry_time.get())
+        except:
+            duration = DURATION
+
+        print(duration)
+
         # Obtener valores de la variable actual del ruido y del tipo de filtro
         selected_noise = self.noise_type.get()
         selected_filter = self.band_type.get()
@@ -152,10 +160,10 @@ class App:
         ):
 
             if selected_noise == "WHITE NOISE":  # RUIDO BLANCO
-                noise_data = generate_white_noise(DURATION, SAMPLE_RATE)
+                noise_data = generate_white_noise(duration, SAMPLE_RATE)
 
             elif selected_noise == "PINK NOISE":  # RUIDO ROSA
-                noise_data = generate_pink_noise(DURATION, SAMPLE_RATE)
+                noise_data = generate_pink_noise(duration, SAMPLE_RATE)
 
             if selected_filter == "1/1":  # 1/1 OCTAVA
                 (
@@ -300,6 +308,7 @@ class App:
         self.radio_btn_notch = ttk.Radiobutton()
         self.combo_low_freq = ttk.Combobox()
         self.combo_high_freq = ttk.Combobox()
+        self.entry_time = ttk.Entry()
         self.btn_apply_filter = ttk.Button()
         self.btn_stop = ttk.Button()
 
@@ -457,8 +466,15 @@ class App:
         self.combo_high_freq.state(["disabled"])
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
+        # >>>>> Selección del tiempo de ruido <<<<<
+        ttk.Label(
+            self.frm_options, text="\nIntroduzca los segundos a reproducir:"
+        ).grid(row=14, sticky="w")
+        self.entry_time = ttk.Entry(self.frm_options)
+        self.entry_time.grid(row=15)
+
         ttk.Label(self.frm_options, text="\n").grid(
-            row=14
+            row=16
         )  # Espacio en blanco antes de los botones
 
         # >>>>> Realizar el filtro <<<<<
@@ -471,7 +487,7 @@ class App:
             ],
             state="disabled",
         )
-        self.btn_apply_filter.grid(row=15, columnspan=2)
+        self.btn_apply_filter.grid(row=17, columnspan=2)
 
         # >>>>> Botón de reproducción <<<<<
         btn_play_noise = ttk.Button(
@@ -479,7 +495,7 @@ class App:
             text="REPRODUCIR",
             command=lambda: self.start_noise_thread(),
         )
-        btn_play_noise.grid(row=16, columnspan=2)
+        btn_play_noise.grid(row=18, columnspan=2)
 
         # >>>>> Botón STOP <<<<<
         self.btn_stop = ttk.Button(
@@ -488,4 +504,4 @@ class App:
             command=lambda: self.control_noise_event.set(),
             state="!disbaled",
         )
-        self.btn_stop.grid(row=17, columnspan=2)
+        self.btn_stop.grid(row=19, columnspan=2)

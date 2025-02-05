@@ -83,3 +83,10 @@ DIARIO DEL TFG
         a la señal de la fuente, hay que hacer uso de un ecualizador gráfico.
 
     - He visto que la fuente de CESVA AP602 tiene +-10dB para ecualizar cada banda de tercio de octava
+
+05/02/2025
+    - He soluiconado un error que hacía que al usar un filtro paso bajo se quedase fija la banda de corte sueprior, cuando debería ser al revés.
+        Con el filtro paso alto pasaba lo contrario.
+
+    - He añadido un widget de entrada ttk.Entry() para seleccionar la duración en segundos del archivo de audio.
+        Por defecto dura lo que marque la constante declarada en el archivo config.py
