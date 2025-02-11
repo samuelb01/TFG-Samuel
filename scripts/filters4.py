@@ -72,7 +72,7 @@ def plot_filtered_signals(combined_signal):
     )  # Señal combinada en el dominio de la frecuencia
     xf = np.fft.rfftfreq(N, T)  # Frecuencias
 
-    print(yf[0], yf[-1])
+    # print(yf[0], yf[-1])
 
     # Graficar el espectro de la señal combinada en el dominio de la frecuencia
     plt.figure(figsize=(10, 6))
@@ -104,7 +104,7 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands):
         h = np.where(h == 0, EPSILON, h)
 
         plt.plot(
-            w, 20 * np.log10(abs(h)), label=f"{f_low:.1f} - {f_high:.1f} Hz"
+            w, -20 * np.log10(abs(h)), label=f"{f_low:.1f} - {f_high:.1f} Hz"
         )
 
     plt.xscale("log")
@@ -113,15 +113,19 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands):
     plt.title("Respuesta en Frecuencia de los Filtros")
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.legend()
+
+    # Invertir el eje Y para mostrar los valores positivos abajo y los negativos arriba
+    plt.gca().invert_yaxis()
+
     plt.show()
 
 
-def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands):
+def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands, band_type = "1/1"):
     filter_compliance_check = True
     green_tick = "\u2705"  # Unicode para el símbolo de check verde
     red_cross = "\u274c"  # Unicode para el símbolo de cruz roja
 
-    print(f'EL ORDEN DE LOS FILROS ES -> {FILTER_ORDER}')
+    print(f'EL ORDEN DE LOS FILTROS ES -> {FILTER_ORDER}')
 
     # Compara la respuesta del filtro con los límites de atenuación de la norma ISO 61260-1
     for i, (f_low, f_high) in enumerate(
@@ -130,14 +134,19 @@ def verify_filter_compliance(fs, fl_selected_bands, fh_selected_bands):
         sos = butter(
             FILTER_ORDER, [f_low, f_high], "bandpass", False, "sos", fs
         )
-        w, h = sosfreqz(sos, worN=10000, fs=fs)
+        w, h = sosfreqz(sos, worN=50000, fs=fs)
         # Reemplazar valores cero por un valor muy pequeño antes de calcular el logaritmo para evitar errores
         h = np.where(h == 0, EPSILON, h)
         attenuation_db = 20 * np.log10(abs(h))
+
+        if band_type == "1/1":
+            acceptance_limits = ACCEPTANCE_LIMITS_CLASS1
+        elif band_type == "1/3":
+            acceptance_limits = create_acceptance_limits_dicc(b=3, class_type=1)
         
         print(f"\n\n>>>>> FILTRO {i+1} <<<<<")
         # Compara la atenuación de la señal filtrada (según respuesta del filtro) con los límites de aceptación de la norma ISO 61260-1
-        for omega, (low_limit, high_limit) in zip(list(ACCEPTANCE_LIMITS_CLASS1.keys()), list(ACCEPTANCE_LIMITS_CLASS1.values())): 
+        for omega, (low_limit, high_limit) in zip(list(acceptance_limits.keys()), list(acceptance_limits.values())): 
             freq = omega * (
                 (f_low * f_high) ** 0.5
             )  # Frecuencia real basada en la normalización

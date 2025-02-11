@@ -115,6 +115,10 @@ class App:
         filter_type = self.filter_type.get()
 
         if filter_type != "":
+            # Se activan los desplegables para selccionar bandas
+            self.combo_low_freq.state(["!disabled"])
+            self.combo_high_freq.state(["!disabled"])
+
             if filter_type == "low_pass":
                 self.combo_low_freq.set(bands[0])
                 self.combo_low_freq.state(["disabled"])
@@ -141,8 +145,6 @@ class App:
             duration = int(self.entry_time.get())
         except:
             duration = DURATION
-
-        print(duration)
 
         # Obtener valores de la variable actual del ruido y del tipo de filtro
         selected_noise = self.noise_type.get()
@@ -217,7 +219,6 @@ class App:
         """Reproduce el ruido generado"""
         p = pyaudio.PyAudio()  # Inicializar PyAudio
 
-        # Uso with para garantizar el cierre del sistema
         stream = p.open(
             format=pyaudio.paInt16,  # Formato de audio
             channels=1,  # 1 = Mono
@@ -250,7 +251,7 @@ class App:
         elif len(self.fm) == len(NOMINAL_OCTAVE_FREC):
             nominal_freq = NOMINAL_OCTAVE_FREC
 
-        # Crear una figura de Matplotlib sin especificar dpi
+        # Crear una figura de Matplotlib
         self.figure = Figure(figsize=(7, 5))
         self.ax = self.figure.add_subplot(111)
         self.ax.set_title("Niveles por bandas")
@@ -327,9 +328,6 @@ class App:
         self.radio_btn_highpass.state(["!disabled"])
         self.radio_btn_bandpass.state(["!disabled"])
         self.radio_btn_notch.state(["!disabled"])
-
-        self.combo_low_freq.state(["!disabled"])
-        self.combo_high_freq.state(["!disabled"])
 
         self.clear_bands()
         self.update_bands()

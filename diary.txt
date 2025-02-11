@@ -90,3 +90,10 @@ DIARIO DEL TFG
 
     - He añadido un widget de entrada ttk.Entry() para seleccionar la duración en segundos del archivo de audio.
         Por defecto dura lo que marque la constante declarada en el archivo config.py
+
+11/02/2025
+    - Cambios para mostrar en la respuesta en frecuecnia de los filtros la atenuación en valores positivos y representar innvertida la gráfica (negativos como positivos y viceversa)
+    
+    - La selección d ebandas sigue bloqueada hasta que no se presiona algún valor para tipo de filtro (paso-bajo, paso-alto, paso-banda, notch)
+
+    - He creado un archivo pruebas.py para ir probando cosas y para mostrar el cumplimiento de los límites de aceptación
