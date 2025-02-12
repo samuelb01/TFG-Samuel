@@ -22,45 +22,6 @@ from config import (
 )
 
 
-
-# CONSTANTES
-NOMINAL_THIRDOCTAVE_FREC = [
-    25,
-    31.5,
-    40,
-    50,
-    63,
-    80,
-    100,
-    125,
-    160,
-    200,
-    250,
-    315,
-    400,
-    500,
-    630,
-    800,
-    1000,
-    1250,
-    1600,
-    2000,
-    2500,
-    3150,
-    4000,
-    5000,
-    6300,
-    8000,
-    10000,
-    12500,
-    16000,
-    20000,
-]
-NOMINAL_OCTAVE_FREC = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
-G = 10 ** (3 / 10)  # Octave frecuency ratio
-FR = 1000  # Reference frequency
-
-
 # --------------------------------------------------------------------------------------------
 def plot_filtered_signals(combined_signal):
 
@@ -97,7 +58,7 @@ def plot_filter_response(fs, fl_selected_bands, fh_selected_bands):
             FILTER_ORDER, [f_low, f_high], "bandpass", False, "sos", fs
         )
         w, h = sosfreqz(
-            sos, worN=10000, fs=fs
+            sos, worN=50000, fs=fs
         )  # Respuesta en frecuencia del filtro
 
         # Reemplazar valores cero por un valor muy pequeño antes de calcular el logaritmo para evitar errores
