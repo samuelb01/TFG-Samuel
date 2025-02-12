@@ -137,10 +137,10 @@ class App:
                 self.update_bandpass(bands, fl, fh)
 
             elif filter_type == "all_pass":
-                # FALTA DESARROLLAR EL FILTRO PASO_TODO
+                # FALTA DESARROLLAR EL FILTRO
                 self.combo_low_freq.set(bands[0])
                 self.combo_low_freq.state(["disabled"])
-                self.combo_high_freq.state(bands[-1])
+                self.combo_high_freq.set(bands[-1])
                 self.combo_high_freq.state(["disabled"])
 
     def apply_filter(self):
