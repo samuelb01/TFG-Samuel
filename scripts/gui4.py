@@ -136,6 +136,13 @@ class App:
                 # FALTA DESARROLLAR EL FILTRO NOTCH
                 self.update_bandpass(bands, fl, fh)
 
+            elif filter_type == "all_pass":
+                # FALTA DESARROLLAR EL FILTRO PASO_TODO
+                self.combo_low_freq.set(bands[0])
+                self.combo_low_freq.state(["disabled"])
+                self.combo_high_freq.state(bands[-1])
+                self.combo_high_freq.state(["disabled"])
+
     def apply_filter(self):
         """Realiza el filtrado seleccinado"""
         self.stop_noise()  # Verificar si el hilo de reproducción está activo y si lo está lo apaga
@@ -307,6 +314,7 @@ class App:
         self.radio_btn_highpass = ttk.Radiobutton()
         self.radio_btn_bandpass = ttk.Radiobutton()
         self.radio_btn_notch = ttk.Radiobutton()
+        self.radio_btn_allpass = ttk.Radiobutton()
         self.combo_low_freq = ttk.Combobox()
         self.combo_high_freq = ttk.Combobox()
         self.entry_time = ttk.Entry()
@@ -328,6 +336,7 @@ class App:
         self.radio_btn_highpass.state(["!disabled"])
         self.radio_btn_bandpass.state(["!disabled"])
         self.radio_btn_notch.state(["!disabled"])
+        self.radio_btn_allpass.state(["!disabled"])
 
         self.clear_bands()
         self.update_bands()
@@ -438,41 +447,51 @@ class App:
         )
         self.radio_btn_notch.grid(row=10, sticky="w")
 
+        self.radio_btn_allpass = ttk.Radiobutton(
+            self.frm_options,
+            text="Filtro paso todo",
+            variable=self.filter_type,
+            value="all_pass",
+            command=self.on_band_type_selected,
+            state="disabled",
+        )
+        self.radio_btn_allpass.grid(row=11, sticky="w")
+
         # >>>>> Selección de las bandas <<<<<
         ttk.Label(
             self.frm_options, text="\nSeleccione las bandas a filtrar:"
-        ).grid(row=11, sticky="w")
+        ).grid(row=12, sticky="w")
 
         ttk.Label(self.frm_options, text="Banda inferior").grid(
-            row=12, column=0
+            row=13, column=0
         )
         ttk.Label(self.frm_options, text="Banda superior").grid(
-            row=12, column=1
+            row=13, column=1
         )
 
         self.combo_low_freq = ttk.Combobox(
             self.frm_options, state="readonly", postcommand=self.update_bands
         )
-        self.combo_low_freq.grid(row=13, column=0, sticky="w")
+        self.combo_low_freq.grid(row=14, column=0, sticky="w")
         self.combo_low_freq.state(["disabled"])
         self.combo_low_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
         self.combo_high_freq = ttk.Combobox(
             self.frm_options, state="readonly", postcommand=self.update_bands
         )
-        self.combo_high_freq.grid(row=13, column=1, sticky="w")
+        self.combo_high_freq.grid(row=14, column=1, sticky="w")
         self.combo_high_freq.state(["disabled"])
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
         # >>>>> Selección del tiempo de ruido <<<<<
         ttk.Label(
             self.frm_options, text="\nIntroduzca los segundos a reproducir:"
-        ).grid(row=14, sticky="w")
+        ).grid(row=15, sticky="w")
         self.entry_time = ttk.Entry(self.frm_options)
-        self.entry_time.grid(row=15)
+        self.entry_time.grid(row=16)
 
         ttk.Label(self.frm_options, text="\n").grid(
-            row=16
+            row=17
         )  # Espacio en blanco antes de los botones
 
         # >>>>> Realizar el filtro <<<<<
@@ -485,7 +504,7 @@ class App:
             ],
             state="disabled",
         )
-        self.btn_apply_filter.grid(row=17, columnspan=2)
+        self.btn_apply_filter.grid(row=18, columnspan=2)
 
         # >>>>> Botón de reproducción <<<<<
         btn_play_noise = ttk.Button(
@@ -493,7 +512,7 @@ class App:
             text="REPRODUCIR",
             command=lambda: self.start_noise_thread(),
         )
-        btn_play_noise.grid(row=18, columnspan=2)
+        btn_play_noise.grid(row=19, columnspan=2)
 
         # >>>>> Botón STOP <<<<<
         self.btn_stop = ttk.Button(
@@ -502,4 +521,4 @@ class App:
             command=lambda: self.control_noise_event.set(),
             state="!disbaled",
         )
-        self.btn_stop.grid(row=19, columnspan=2)
+        self.btn_stop.grid(row=20, columnspan=2)

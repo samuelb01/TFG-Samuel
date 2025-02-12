@@ -13,4 +13,4 @@ combined_signal, band_levels, fm, fl_selected_bands, fh_selected_bands = (
 verify_filter_compliance(48000, fl_selected_bands, fh_selected_bands, "1/1")
 plot_filter_response(48000, fl_selected_bands, fh_selected_bands)
 plot_filtered_signals(combined_signal)
-plot_filtered_signals(pink)
+# plot_filtered_signals(pink)
