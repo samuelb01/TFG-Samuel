@@ -60,8 +60,12 @@ class App:
         self.combo_high_freq.state(["!disabled"])
         self.combo_low_freq.state(["!disabled"])
 
+    def delete_and_change_entry_value(self, entry, value, initial_pos=0, final_pos=tk.END):
+        entry.delete(initial_pos,final_pos)
+        entry.insert(initial_pos, value)
+
     def check_conditions(self, event=None):
-        """Comprueba si se peude activar el botón de filtrado"""
+        """Comprueba si se puede activar el botón de filtrado"""
         if all(
             [
                 self.noise_type.get() != "",
@@ -71,6 +75,61 @@ class App:
             ]
         ):
             self.btn_apply_filter.state(["!disabled"])
+
+    def check_medition_time_iso_16283_1(self):
+        """Gestiona según las bandas a medir y el tiempo seleccionado si se cumple la norma ISO 16283-1:2014"""
+        time_entry = float(self.time_entry.get())
+        fl = float(self.combo_low_freq.get())
+        # fh = self.combo_high_freq.get()
+
+        # if fl <= 50 and fh <= 80:
+        #     required_time = 15
+        # elif fl >= 100 and fh <= 400:
+        #     required_time = 6
+        # elif fl >= 500 and fh <= 5000:
+        #     required_time = 4
+
+        if fl >= 500:
+            required_time = 4
+        elif 100 <= fl <= 400:
+            required_time = 6
+        elif fl <= 80:
+            required_time = 15
+
+        # Se comprueba se el tiempo introducido es menor al requerido por la norma
+        if time_entry < required_time:
+            self.delete_and_change_entry_value(self.time_entry, required_time)
+            messagebox.showwarning(
+                "ADVERTENCIA",
+                f"Se ha cambiado automaticamente la duración a {required_time} ya que con la duración introducida no se cumplía la norma ISO 16283-1:2014",
+            )
+        else:
+            if time_entry != int(time_entry):  # Tipo float introducido -> cambio a int
+                self.delete_and_change_entry_value(self.time_entry, int(time_entry))
+                messagebox.showwarning(
+                    "ADVERTENCIA",
+                    f"Se ha cambiado automaticamente la duración a {self.time_entry.get()} segundos por haber introducido un valor decimal",
+                )
+                
+    def check_selected_time_type(self):
+        """Comprobar el tipo de los segundos elegidos"""
+        try:
+            float(self.time_entry.get())  # Obtengo el valor de tiempo introducido e intento convertirlo a float
+        except:
+            match self.time_entry.get():
+                case "":
+                    messagebox.showinfo(
+                        "INFORMACIÓN",
+                        f"Como no se ha introducido ninguna duración se establece por defecto {DURATION} segundos",
+                    )
+                    self.delete_and_change_entry_value(self.time_entry, DURATION)
+                case _:
+                    messagebox.showerror(
+                        "ERROR",
+                        f"La duración introducida no sigue ningún fomrato válido, introduzca un número o deje en blanco para valor por defecto ({DURATION})",
+                    )
+        else:   
+            self.check_medition_time_iso_16283_1()
 
     def clear_bands(self):
         """Vacía los valores de las bandas de frecuencias al cambiar de tipo de banda"""
@@ -107,7 +166,7 @@ class App:
         """Actualiza las bandas a seleccionar en los desplegables de la interfaz"""
         bands = self.change_band_type()
 
-        # Frecuencias de corte seleccionadas (en caso de estarlo)
+        # Frecuencias de corte marcadas
         fl = self.combo_low_freq.get()
         fh = self.combo_high_freq.get()
 
@@ -148,10 +207,8 @@ class App:
         self.stop_noise()  # Verificar si el hilo de reproducción está activo y si lo está lo apaga
 
         # Obtiene la duración introducida para el audio (por defecto duración en config.py)
-        try:
-            duration = int(self.entry_time.get())
-        except:
-            duration = DURATION
+        print(self.time_entry.get())
+        time_entry = int(self.time_entry.get())
 
         # Obtener valores de la variable actual del ruido y del tipo de filtro
         selected_noise = self.noise_type.get()
@@ -160,7 +217,7 @@ class App:
             float(self.combo_low_freq.get()),
             float(self.combo_high_freq.get()),
         ]
-
+        print("APLICO FILTRO")
         # Decidir tipo de filtro y de ruido para filtrar
         if (
             selected_noise != ""
@@ -169,10 +226,10 @@ class App:
         ):
 
             if selected_noise == "WHITE NOISE":  # RUIDO BLANCO
-                noise_data = generate_white_noise(duration, SAMPLE_RATE)
+                noise_data = generate_white_noise(time_entry, SAMPLE_RATE)
 
             elif selected_noise == "PINK NOISE":  # RUIDO ROSA
-                noise_data = generate_pink_noise(duration, SAMPLE_RATE)
+                noise_data = generate_pink_noise(time_entry, SAMPLE_RATE)
 
             if selected_filter == "1/1":  # 1/1 OCTAVA
                 (
@@ -317,7 +374,7 @@ class App:
         self.radio_btn_allpass = ttk.Radiobutton()
         self.combo_low_freq = ttk.Combobox()
         self.combo_high_freq = ttk.Combobox()
-        self.entry_time = ttk.Entry()
+        self.time_entry = ttk.Entry()
         self.btn_apply_filter = ttk.Button()
         self.btn_stop = ttk.Button()
 
@@ -487,8 +544,8 @@ class App:
         ttk.Label(
             self.frm_options, text="\nIntroduzca los segundos a reproducir:"
         ).grid(row=15, sticky="w")
-        self.entry_time = ttk.Entry(self.frm_options)
-        self.entry_time.grid(row=16)
+        self.time_entry = ttk.Entry(self.frm_options)
+        self.time_entry.grid(row=16)
 
         ttk.Label(self.frm_options, text="\n").grid(
             row=17
@@ -499,6 +556,7 @@ class App:
             self.frm_options,
             text="APLICAR EL FILTRO",
             command=lambda: [
+                self.check_selected_time_type(),
                 self.apply_filter(),
                 self.check_conditions(),
             ],

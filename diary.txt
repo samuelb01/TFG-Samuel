@@ -100,3 +100,18 @@ DIARIO DEL TFG
 
     - He creado un archivo pruebas.py para ir probando cosas y para mostrar el cumplimiento de los límites de aceptación
 
+12/02/2025
+    - Quiero implementar según la norma ISO 16283-1 los tiempos mínimos de medición según las bandas medidas
+
+    - check_medition_time_iso_16283_1(self) se encarga de gstionar si el número introducido para la duración de la señal cumple con la norma iso, si no cumple se
+        cambia automaticamente a los valores exigidos por la norma.
+    
+    - check_selected_time_type(self) se encarga de gestionar los posibles errores surgidos del tipo de dato introducido en la caja de entrada
+
+13/02/2025 
+    - Sigo implementando la gestión de errores para los segundos elegidos
+    - TENGO QUE GESTIONAR ERROR DE CÓDIGO, GESTIONAR MEJOR EL TRY DE COMPRBAR TIPO DE DURACIÓN
+    - Ya funciona la comprobación del tipo de dato que se mte para segundos, gestionando mediante ventanas emergentes de advertencia y de error los posibles casos a tratar.
+    - También se ha creado una función que comprueba si para las bandas seleccionadas y para el timepo seleccionado se cumple la norma ISO 16283-1:2014 para el timepo de promediado (apartado 7.7)
+        Aunque de momento solo está implementado para posiciones fijasd e micrófonos. Creo que crearé una ventana emergente al pulsar el botón de aplicar el filtro para seleccionar
+            la forma en que se va a tomar las medidas (posiciones fijas, movimiento continuo mecanizado y barrido manual) 
