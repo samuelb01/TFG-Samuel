@@ -60,8 +60,10 @@ class App:
         self.combo_high_freq.state(["!disabled"])
         self.combo_low_freq.state(["!disabled"])
 
-    def delete_and_change_entry_value(self, entry, value, initial_pos=0, final_pos=tk.END):
-        entry.delete(initial_pos,final_pos)
+    def delete_and_change_entry_value(
+        self, entry, value, initial_pos=0, final_pos=tk.END
+    ):
+        entry.delete(initial_pos, final_pos)
         entry.insert(initial_pos, value)
 
     def check_conditions(self, event=None):
@@ -80,14 +82,6 @@ class App:
         """Gestiona según las bandas a medir y el tiempo seleccionado si se cumple la norma ISO 16283-1:2014"""
         time_entry = float(self.time_entry.get())
         fl = float(self.combo_low_freq.get())
-        # fh = self.combo_high_freq.get()
-
-        # if fl <= 50 and fh <= 80:
-        #     required_time = 15
-        # elif fl >= 100 and fh <= 400:
-        #     required_time = 6
-        # elif fl >= 500 and fh <= 5000:
-        #     required_time = 4
 
         if fl >= 500:
             required_time = 4
@@ -104,17 +98,23 @@ class App:
                 f"Se ha cambiado automaticamente la duración a {required_time} ya que con la duración introducida no se cumplía la norma ISO 16283-1:2014",
             )
         else:
-            if time_entry != int(time_entry):  # Tipo float introducido -> cambio a int
-                self.delete_and_change_entry_value(self.time_entry, int(time_entry))
+            if time_entry != int(
+                time_entry
+            ):  # Tipo float introducido -> cambio a int
+                self.delete_and_change_entry_value(
+                    self.time_entry, int(time_entry)
+                )
                 messagebox.showwarning(
                     "ADVERTENCIA",
                     f"Se ha cambiado automaticamente la duración a {self.time_entry.get()} segundos por haber introducido un valor decimal",
                 )
-                
+
     def check_selected_time_type(self):
         """Comprobar el tipo de los segundos elegidos"""
         try:
-            float(self.time_entry.get())  # Obtengo el valor de tiempo introducido e intento convertirlo a float
+            float(
+                self.time_entry.get()
+            )  # Obtengo el valor de tiempo introducido e intento convertirlo a float
         except:
             match self.time_entry.get():
                 case "":
@@ -122,13 +122,15 @@ class App:
                         "INFORMACIÓN",
                         f"Como no se ha introducido ninguna duración se establece por defecto {DURATION} segundos",
                     )
-                    self.delete_and_change_entry_value(self.time_entry, DURATION)
+                    self.delete_and_change_entry_value(
+                        self.time_entry, DURATION
+                    )
                 case _:
                     messagebox.showerror(
                         "ERROR",
-                        f"La duración introducida no sigue ningún fomrato válido, introduzca un número o deje en blanco para valor por defecto ({DURATION})",
+                        f"La duración introducida no sigue ningún formato válido, introduzca un número o deje en blanco para valor por defecto ({DURATION})",
                     )
-        else:   
+        else:
             self.check_medition_time_iso_16283_1()
 
     def clear_bands(self):
@@ -224,7 +226,6 @@ class App:
                 "No se ha podido realizar el filtrado de la señal de referencia, revise el tipo de filtro, de ruido, bandas a filtrar y duración",
             )
         else:
-            print("APLICO FILTRO")
             # Decidir tipo de filtro y de ruido para filtrar
             if (
                 selected_noise != ""
@@ -254,10 +255,11 @@ class App:
                         self.fm,
                         self.fl_selected_bands,
                         self.fh_selected_bands,
-                    ) = thirdOctaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
+                    ) = thirdOctaveFilter(
+                        noise_data, SAMPLE_RATE, bandas_a_filtrar
+                    )
 
-                self.create_plot()        
-            
+                self.create_plot()
 
     def start_noise_thread(self):
         """Inicia el hilo para reproducir el ruido"""
@@ -559,24 +561,32 @@ class App:
                 self.check_selected_time_type(),
                 self.apply_filter(),
                 self.check_conditions(),
+                self.btn_play_noise.state(["!disabled"]),
             ],
             state="disabled",
         )
         self.btn_apply_filter.grid(row=18, columnspan=2)
 
         # >>>>> Botón de reproducción <<<<<
-        btn_play_noise = ttk.Button(
+        self.btn_play_noise = ttk.Button(
             self.frm_options,
             text="REPRODUCIR",
-            command=lambda: self.start_noise_thread(),
+            command=lambda: [
+                self.start_noise_thread(),
+                self.btn_stop.state(["!disabled"]),
+            ],
+            state="disabled",
         )
-        btn_play_noise.grid(row=19, columnspan=2)
+        self.btn_play_noise.grid(row=19, columnspan=2)
 
         # >>>>> Botón STOP <<<<<
         self.btn_stop = ttk.Button(
             self.frm_options,
             text="STOP REPRODUCCIÓN",
-            command=lambda: self.control_noise_event.set(),
-            state="!disbaled",
+            command=lambda: [
+                self.control_noise_event.set(),
+                self.btn_stop.state(["disabled"]),
+            ],
+            state="disabled",
         )
         self.btn_stop.grid(row=20, columnspan=2)

@@ -120,3 +120,7 @@ DIARIO DEL TFG
     - Quiero gestionar que intenta aplicar el filtrot siempre, sea un valor válido o no la duración.
 
     - Ahora se se introduce en el cuadro de duración un valor que no sea un número, dará error y no realizará el filtrado
+
+    - He eliminado variables que declaraba dos veces, ya que no tenía ningún sentido
+
+    - Botón de reproducción solo se activa cuando se realiza el filtrado. Si se pulsa el de reproducción se activa el de STOP, y cuando se pulsa STOP se vuelve a desactivar hasta pulsar de nuevo REPRODUCIR.
