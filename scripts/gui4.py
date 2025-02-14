@@ -368,16 +368,16 @@ class App:
         self.noise_type = tk.StringVar()
         self.band_type = tk.StringVar()
         self.filter_type = tk.StringVar()
-        self.radio_btn_lowpass = ttk.Radiobutton()
-        self.radio_btn_highpass = ttk.Radiobutton()
-        self.radio_btn_bandpass = ttk.Radiobutton()
-        self.radio_btn_notch = ttk.Radiobutton()
-        self.radio_btn_allpass = ttk.Radiobutton()
-        self.combo_low_freq = ttk.Combobox()
-        self.combo_high_freq = ttk.Combobox()
-        self.time_entry = ttk.Entry()
-        self.btn_apply_filter = ttk.Button()
-        self.btn_stop = ttk.Button()
+        # self.radio_btn_lowpass = ttk.Radiobutton()
+        # self.radio_btn_highpass = ttk.Radiobutton()
+        # self.radio_btn_bandpass = ttk.Radiobutton()
+        # self.radio_btn_notch = ttk.Radiobutton()
+        # self.radio_btn_allpass = ttk.Radiobutton()
+        # self.combo_low_freq = ttk.Combobox()
+        # self.combo_high_freq = ttk.Combobox()
+        # self.time_entry = ttk.Entry()
+        # self.btn_apply_filter = ttk.Button()
+        # self.btn_stop = ttk.Button()
 
     def on_filter_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de filtro"""
@@ -407,7 +407,6 @@ class App:
             self.root, padding=10, relief="groove", borderwidth=2
         )
         self.frm_options.grid(padx=10, pady=10, row=0, column=0, sticky="n")
-
         # Marco para el gráfico
         self.frm_graphic = ttk.Frame(
             self.root, padding=10, relief="groove", borderwidth=2
@@ -418,23 +417,23 @@ class App:
         ttk.Label(self.frm_options, text="Seleccione el tipo de ruido:").grid(
             row=0, sticky="w"
         )
-        radio_btn_pink = ttk.Radiobutton(
+        self.radio_btn_pink = ttk.Radiobutton(
             self.frm_options,
             text="Ruido rosa",
             variable=self.noise_type,
             value="PINK NOISE",
             command=self.check_conditions,
         )  # Crear botón para ruido rosa
-        radio_btn_pink.grid(row=1, sticky="w")
+        self.radio_btn_pink.grid(row=1, sticky="w")
 
-        radio_btn_white = ttk.Radiobutton(
+        self.radio_btn_white = ttk.Radiobutton(
             self.frm_options,
             text="Ruido blanco",
             variable=self.noise_type,
             value="WHITE NOISE",
             command=self.check_conditions,
         )  # Crear botón para ruido blanco
-        radio_btn_white.grid(row=2, sticky="w")
+        self.radio_btn_white.grid(row=2, sticky="w")
 
         # >>>>> Selección de tipo de filtro <<<<<
         ttk.Label(
@@ -442,23 +441,23 @@ class App:
             text="\nSeleccione el tipo de banda de frecuencia:",
         ).grid(row=3, sticky="w")
 
-        radio_btn_octave = ttk.Radiobutton(
+        self.radio_btn_octave = ttk.Radiobutton(
             self.frm_options,
             text="Octavas",
             variable=self.band_type,
             value="1/1",
             command=self.on_band_type_selected,
         )  # Crear botón para octavas
-        radio_btn_octave.grid(row=4, sticky="w")
+        self.radio_btn_octave.grid(row=4, sticky="w")
 
-        radio_btn_third_octave = ttk.Radiobutton(
+        self.radio_btn_third_octave = ttk.Radiobutton(
             self.frm_options,
             text="Tercios de octavas",
             variable=self.band_type,
             value="1/3",
             command=self.on_band_type_selected,
         )  # Crear botón para tercios de octavas
-        radio_btn_third_octave.grid(row=5, sticky="w")
+        self.radio_btn_third_octave.grid(row=5, sticky="w")
 
         # >>>>> Selección de tipo de filtro <<<<<
         ttk.Label(
