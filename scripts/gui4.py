@@ -206,57 +206,58 @@ class App:
         """Realiza el filtrado seleccinado"""
         self.stop_noise()  # Verificar si el hilo de reproducción está activo y si lo está lo apaga
 
-        # Obtiene la duración introducida para el audio (por defecto duración en config.py)
-        print(self.time_entry.get())
-        time_entry = int(self.time_entry.get())
+        try:
+            # Obtiene la duración introducida para el audio (por defecto duración en config.py)
+            time_entry = int(self.time_entry.get())
 
-        # Obtener valores de la variable actual del ruido y del tipo de filtro
-        selected_noise = self.noise_type.get()
-        selected_filter = self.band_type.get()
-        bandas_a_filtrar = [
-            float(self.combo_low_freq.get()),
-            float(self.combo_high_freq.get()),
-        ]
-        print("APLICO FILTRO")
-        # Decidir tipo de filtro y de ruido para filtrar
-        if (
-            selected_noise != ""
-            and selected_filter != ""
-            and bandas_a_filtrar != ""
-        ):
-
-            if selected_noise == "WHITE NOISE":  # RUIDO BLANCO
-                noise_data = generate_white_noise(time_entry, SAMPLE_RATE)
-
-            elif selected_noise == "PINK NOISE":  # RUIDO ROSA
-                noise_data = generate_pink_noise(time_entry, SAMPLE_RATE)
-
-            if selected_filter == "1/1":  # 1/1 OCTAVA
-                (
-                    self.filtered_noise,
-                    self.band_levels,
-                    self.fm,
-                    self.fl_selected_bands,
-                    self.fh_selected_bands,
-                ) = octaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
-
-            elif selected_filter == "1/3":  # 1/3 OCTAVA
-                (
-                    self.filtered_noise,
-                    self.band_levels,
-                    self.fm,
-                    self.fl_selected_bands,
-                    self.fh_selected_bands,
-                ) = thirdOctaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
-
-            self.create_plot()
-
-        # Muestra ventana de error si no hay ruido y/o filtro seleccionado
-        else:
+            # Obtener valores de la variable actual del ruido y del tipo de filtro
+            selected_noise = self.noise_type.get()
+            selected_filter = self.band_type.get()
+            bandas_a_filtrar = [
+                float(self.combo_low_freq.get()),
+                float(self.combo_high_freq.get()),
+            ]
+        except:
+            # Muestra ventana de error si no hay ruido y/o filtro seleccionado
             messagebox.showerror(
                 "Advertencia",
-                "Debe seleccionar un tipo de filtro, de ruido y bandas a filtrar",
+                "No se ha podido realizar el filtrado de la señal de referencia, revise el tipo de filtro, de ruido, bandas a filtrar y duración",
             )
+        else:
+            print("APLICO FILTRO")
+            # Decidir tipo de filtro y de ruido para filtrar
+            if (
+                selected_noise != ""
+                and selected_filter != ""
+                and bandas_a_filtrar != ""
+            ):
+
+                if selected_noise == "WHITE NOISE":  # RUIDO BLANCO
+                    noise_data = generate_white_noise(time_entry, SAMPLE_RATE)
+
+                elif selected_noise == "PINK NOISE":  # RUIDO ROSA
+                    noise_data = generate_pink_noise(time_entry, SAMPLE_RATE)
+
+                if selected_filter == "1/1":  # 1/1 OCTAVA
+                    (
+                        self.filtered_noise,
+                        self.band_levels,
+                        self.fm,
+                        self.fl_selected_bands,
+                        self.fh_selected_bands,
+                    ) = octaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
+
+                elif selected_filter == "1/3":  # 1/3 OCTAVA
+                    (
+                        self.filtered_noise,
+                        self.band_levels,
+                        self.fm,
+                        self.fl_selected_bands,
+                        self.fh_selected_bands,
+                    ) = thirdOctaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
+
+                self.create_plot()        
+            
 
     def start_noise_thread(self):
         """Inicia el hilo para reproducir el ruido"""

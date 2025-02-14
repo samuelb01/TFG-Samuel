@@ -115,3 +115,8 @@ DIARIO DEL TFG
     - También se ha creado una función que comprueba si para las bandas seleccionadas y para el timepo seleccionado se cumple la norma ISO 16283-1:2014 para el timepo de promediado (apartado 7.7)
         Aunque de momento solo está implementado para posiciones fijasd e micrófonos. Creo que crearé una ventana emergente al pulsar el botón de aplicar el filtro para seleccionar
             la forma en que se va a tomar las medidas (posiciones fijas, movimiento continuo mecanizado y barrido manual) 
+
+14/02/2025
+    - Quiero gestionar que intenta aplicar el filtrot siempre, sea un valor válido o no la duración.
+
+    - Ahora se se introduce en el cuadro de duración un valor que no sea un número, dará error y no realizará el filtrado
