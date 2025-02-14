@@ -50,6 +50,11 @@ class App:
         self.fm = None
         self.fl_selected_bands = None
         self.fh_selected_bands = None
+        self.label_var = None
+        self.equalizer_scales = []  # Array con todos los deslizadores
+        self.equalizer_scales_labels = (
+            []
+        )  # Array con etiquetas de valores de los deslizadores
 
         # Crea la interfaz de la app y la inicializa
         self.create_widgets()
@@ -65,6 +70,11 @@ class App:
     ):
         entry.delete(initial_pos, final_pos)
         entry.insert(initial_pos, value)
+
+    def clear_frame(self, frame):
+        """Elimina todos los widgets dentro del frame"""
+        for widget in frame.winfo_children():
+            widget.destroy()
 
     def check_conditions(self, event=None):
         """Comprueba si se puede activar el botón de filtrado"""
@@ -260,6 +270,7 @@ class App:
                     )
 
                 self.create_plot()
+                self.create_equalizer_gui()
 
     def start_noise_thread(self):
         """Inicia el hilo para reproducir el ruido"""
@@ -370,16 +381,6 @@ class App:
         self.noise_type = tk.StringVar()
         self.band_type = tk.StringVar()
         self.filter_type = tk.StringVar()
-        # self.radio_btn_lowpass = ttk.Radiobutton()
-        # self.radio_btn_highpass = ttk.Radiobutton()
-        # self.radio_btn_bandpass = ttk.Radiobutton()
-        # self.radio_btn_notch = ttk.Radiobutton()
-        # self.radio_btn_allpass = ttk.Radiobutton()
-        # self.combo_low_freq = ttk.Combobox()
-        # self.combo_high_freq = ttk.Combobox()
-        # self.time_entry = ttk.Entry()
-        # self.btn_apply_filter = ttk.Button()
-        # self.btn_stop = ttk.Button()
 
     def on_filter_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de filtro"""
@@ -402,6 +403,50 @@ class App:
         self.update_bands()
         self.check_conditions()
 
+    def update_gain(self, value, label_var):
+        """Actualiza la etiqueta del deslizador correspondiente"""
+        label_var.set(f"{float(value):.1f} dB")
+
+    def create_equalizer_gui(self):
+        """Crea la interfaz con los botones delizables para ecualizazr la señal"""
+        self.clear_frame(self.frm_equalizer)
+        band_type = self.band_type.get()
+        self.equalizer_scales = []  # Reiniciar array con deslizadores
+
+        if band_type == "1/1":
+            frequencies = NOMINAL_OCTAVE_FREC
+        elif band_type == "1/3":
+            frequencies = NOMINAL_THIRDOCTAVE_FREC
+
+        for i, freq in enumerate(frequencies):
+            label_var = tk.StringVar(value="0.0 dB")
+
+            freq_label = ttk.Label(self.frm_equalizer, text=f'{freq} Hz')
+            freq_label.grid(row=0, column=i)
+
+            freq_scale = ttk.Scale(
+                self.frm_equalizer,
+                from_=10,
+                to=-10,
+                orient="vertical",
+                command=lambda value, var=label_var: self.update_gain(
+                    value, var
+                ),  # Enlazar cada slider con su propia etiqueta
+            )
+            freq_scale.grid(row=1, column=i)
+
+            scale_label = ttk.Label(
+                self.frm_equalizer,
+                textvariable=label_var,
+                width=8,  # Fijar un ancho fijo -> Tamaño máximo del texto "-xx.x_dB"
+                anchor="center",  # Texto etiqueta centrado
+            )
+            scale_label.grid(row=2, column=i)
+
+            self.equalizer_scales_labels.append(scale_label)
+            self.equalizer_scales.append(freq_scale)
+
+
     def create_widgets(self):
         """Crea los widgets de la interfaz"""
         # Marco para agrupar los widgets
@@ -409,11 +454,18 @@ class App:
             self.root, padding=10, relief="groove", borderwidth=2
         )
         self.frm_options.grid(padx=10, pady=10, row=0, column=0, sticky="n")
+
         # Marco para el gráfico
         self.frm_graphic = ttk.Frame(
             self.root, padding=10, relief="groove", borderwidth=2
         )
         self.frm_graphic.grid(padx=10, pady=10, row=0, column=1, sticky="n")
+
+        # Marco para el ecualizador
+        self.frm_equalizer = ttk.Frame(
+            self.root, padding=10, relief="groove", borderwidth=2
+        )
+        self.frm_equalizer.grid(padx=10, pady=10, row=1, column=1, sticky="n")
 
         # >>>>> Selección de ruido <<<<<
         ttk.Label(self.frm_options, text="Seleccione el tipo de ruido:").grid(

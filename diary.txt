@@ -124,3 +124,6 @@ DIARIO DEL TFG
     - He eliminado variables que declaraba dos veces, ya que no tenía ningún sentido
 
     - Botón de reproducción solo se activa cuando se realiza el filtrado. Si se pulsa el de reproducción se activa el de STOP, y cuando se pulsa STOP se vuelve a desactivar hasta pulsar de nuevo REPRODUCIR.
+
+    - He empezado a crear la interfaz del ecualizador. Ya se crean todos los delizadores para la ganancia cn valores de +-10dB. Se muestra el valor de ganancia debajo del deslizador, y encima la frecuencia a la que corresponde.
+        El problema es que se me sale de la ventana.
