@@ -127,3 +127,10 @@ DIARIO DEL TFG
 
     - He empezado a crear la interfaz del ecualizador. Ya se crean todos los delizadores para la ganancia cn valores de +-10dB. Se muestra el valor de ganancia debajo del deslizador, y encima la frecuencia a la que corresponde.
         El problema es que se me sale de la ventana.
+
+17/02/2025
+    - He creado un evento para que cuando el ratón se pase por encima de alguna barra del gráfico, se muestre encima de la barra su valor en dB, creo que es más cómodo de ver los niveles así que poner todos
+        los valores encima de cada barra.
+        - El evento se llama on_hover() y lo he enlazado al canvas para que cunado se pase el ratón por encima se ejecute
+        - Para poder mostrar el valor encima de la barra, he usado la función "annotate" de Matplotlib, que permite agregar notas o etiquetas en una gráfica en una posición específica.
+    

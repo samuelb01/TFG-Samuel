@@ -50,6 +50,7 @@ class App:
         self.fm = None
         self.fl_selected_bands = None
         self.fh_selected_bands = None
+        self.bars = None
         self.label_var = None
         self.equalizer_scales = []  # Array con todos los deslizadores
         self.equalizer_scales_labels = (
@@ -320,6 +321,21 @@ class App:
         stream.close()  # Cerrar stream
         p.terminate()  # Cerrar PyAudio
 
+    # Función para mostrar el valor al pasar el cursor
+    def on_hover(self, event):
+        if event.inaxes == self.ax:  # Verifica si el cursor está dentro del área de la gráfica
+            for bar, level, freq in zip(self.bars, self.band_levels, self.fm):
+                contains, _ = bar.contains(event)  # Verifica si el cursor está sobre una barra
+                if contains:
+                    # Posicionar la anotación encima de la barra
+                    self.annotation.set_text(f"{level:.1f} dB")  # Muestra el nivel en dB
+                    self.annotation.xy = (freq, level + 1)  # Lo coloca sobre la barra
+                    self.annotation.set_visible(True)  # Lo hace visible
+                    self.canvas.draw_idle()  # Redibuja solo si hay cambios
+                    return
+        self.annotation.set_visible(False)  # Oculta la anotación si no está sobre una barra
+        self.canvas.draw_idle()
+
     def create_plot(self):
         """Crea y actualiza la gráfica de la interfaz"""
         # Decidir qué frecuencias nominales utilizar
@@ -330,7 +346,7 @@ class App:
             nominal_freq = NOMINAL_OCTAVE_FREC
 
         # Crear una figura de Matplotlib
-        self.figure = Figure(figsize=(7, 5))
+        self.figure = Figure(figsize=(10, 8))
         self.ax = self.figure.add_subplot(111)
         self.ax.set_title("Niveles por bandas")
 
@@ -338,7 +354,7 @@ class App:
         widths = np.array(self.fh_selected_bands) - np.array(
             self.fl_selected_bands
         )  # Calcular ancho de las barras en escala logarítmica
-        self.ax.bar(
+        self.bars = self.ax.bar(
             self.fl_selected_bands,
             self.band_levels,
             width=widths,
@@ -364,6 +380,19 @@ class App:
         self.ax.grid(True, which="both", linestyle="--", linewidth=0.5)
         self.figure.tight_layout()
 
+        # Crear el "annotation" para mostrar el nivel en dB
+        self.annotation = self.ax.annotate(
+            "",  # Texto inicial vacío
+            xy=(0, 0),  # Posición inicial
+            xytext=(0, 5),  # Desplazamiento del texto respecto al punto (xy)
+            textcoords="offset points",  # La posición de xytext es relativa a xy
+            bbox=dict(boxstyle="round,pad=0.3", fc="yellow", alpha=0.8),  # Cuadro de fondo
+            fontsize=10,  # Tamaño del texto
+            color="black",  # Color del texto
+            ha="center",  # Alinear horizontalmente el texto en el centro
+            visible=False,  # Ocultar al inicio
+        )
+
         # Personalizar la barra de estado para mostrar x e y en escala logarítmica
         self.ax.format_coord = (
             lambda x, y: f"x = {x:.1f} Hz, y = {y:.1f} dB"
@@ -375,6 +404,9 @@ class App:
         self.canvas.get_tk_widget().grid(
             row=0, column=1, padx=10, pady=10
         )  # Mostrar el lienzo en la ventana
+
+        # Conectar el evento de movimiento del ratón a la función
+        self.canvas.mpl_connect("motion_notify_event", self.on_hover)
 
     def init_widget_types(self):
         """Inicializa como variables de clase los diferentes widgets"""
