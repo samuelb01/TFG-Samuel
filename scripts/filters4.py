@@ -239,6 +239,7 @@ def thirdOctaveFilter(
         if selected_bands[0] <= f <= selected_bands[1]
     ]
     fl_selected_bands = [fl[i] for i in indexes_selected_bands]
+    fm_selected_bands = [fm[i] for i in indexes_selected_bands]
     fh_selected_bands = [fh[i] for i in indexes_selected_bands]
 
     # Aplicar filtro Butterworth
@@ -253,6 +254,7 @@ def thirdOctaveFilter(
         band_levels,
         fm,
         fl_selected_bands,
+        fm_selected_bands,
         fh_selected_bands,
     )
 
@@ -277,6 +279,7 @@ def octaveFilter(
         if selected_bands[0] <= f <= selected_bands[1]
     ]
     fl_selected_bands = [fl[i] for i in indexes_selected_bands]
+    fm_selected_bands = [fm[i] for i in indexes_selected_bands]
     fh_selected_bands = [fh[i] for i in indexes_selected_bands]
 
     # Aplicar filtro Butterworth
@@ -291,21 +294,6 @@ def octaveFilter(
         band_levels,
         fm,
         fl_selected_bands,
+        fm_selected_bands,
         fh_selected_bands,
     )
-
-
-# octaveFilter(PINK_NOISE)
-# octaveFilter(WHITE_NOISE)
-# thirdOctaveFilter(PINK_NOISE)
-# thirdOctaveFilter(WHITE_NOISE)
-# thirdOctaveFilter(PINK_NOISE, [500, 16000])
-
-# white = generate_white_noise(5, 48000)
-# pink = generate_pink_noise(5, 48000)
-# combined_signal, band_levels, fm, fl_selected_bands, fh_selected_bands = (
-#     octaveFilter(pink, 48000)
-# )
-
-# verify_filter_compliance(48000, fl_selected_bands, fh_selected_bands)
-# plot_filter_response(48000, fl_selected_bands, fh_selected_bands)
