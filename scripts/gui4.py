@@ -44,7 +44,7 @@ class App:
         screen_width = self.root.winfo_screenwidth()
 
         # Tamaño de la ventana (+0+0 para que se situe en la esquina superior izquierda)
-        # self.root.geometry(f"{screen_width}x{screen_height}+0+0")  
+        # self.root.geometry(f"{screen_width}x{screen_height}+0+0")
         self.root.state("zoomed")
 
         # crea las variables de control de la interfaz
@@ -59,6 +59,7 @@ class App:
         self.band_levels = None
         self.fm = None
         self.fl_selected_bands = None
+        self.fm_selected_bands = None
         self.fh_selected_bands = None
         self.bars = None
         self.label_var = None
@@ -266,6 +267,7 @@ class App:
                         self.band_levels,
                         self.fm,
                         self.fl_selected_bands,
+                        self.fm_selected_bands,
                         self.fh_selected_bands,
                     ) = octaveFilter(noise_data, SAMPLE_RATE, bandas_a_filtrar)
 
@@ -275,6 +277,7 @@ class App:
                         self.band_levels,
                         self.fm,
                         self.fl_selected_bands,
+                        self.fm_selected_bands,
                         self.fh_selected_bands,
                     ) = thirdOctaveFilter(
                         noise_data, SAMPLE_RATE, bandas_a_filtrar
@@ -333,17 +336,29 @@ class App:
 
     # Función para mostrar el valor al pasar el cursor
     def on_hover(self, event):
-        if event.inaxes == self.ax:  # Verifica si el cursor está dentro del área de la gráfica
-            for bar, level, freq in zip(self.bars, self.band_levels, self.fm):
-                contains, _ = bar.contains(event)  # Verifica si el cursor está sobre una barra
+        if (
+            event.inaxes == self.ax
+        ):  # Verifica si el cursor está dentro del área de la gráfica
+            print(self.band_levels)
+            for bar, level, freq in zip(self.bars, self.band_levels, self.fm_selected_bands):
+                contains, _ = bar.contains(
+                    event
+                )  # Verifica si el cursor está sobre una barra
                 if contains:
                     # Posicionar la anotación encima de la barra
-                    self.annotation.set_text(f"{level:.1f} dB")  # Muestra el nivel en dB
-                    self.annotation.xy = (freq, level + 1)  # Lo coloca sobre la barra
+                    self.annotation.set_text(
+                        f"{level:.1f} dB"
+                    )  # Muestra el nivel en dB
+                    self.annotation.xy = (
+                        freq,
+                        level + 1,
+                    )  # Lo coloca sobre la barra
                     self.annotation.set_visible(True)  # Lo hace visible
                     self.plot_canvas.draw_idle()  # Redibuja solo si hay cambios
                     return
-        self.annotation.set_visible(False)  # Oculta la anotación si no está sobre una barra
+        self.annotation.set_visible(
+            False
+        )  # Oculta la anotación si no está sobre una barra
         self.plot_canvas.draw_idle()
 
     def create_plot(self):
@@ -396,7 +411,9 @@ class App:
             xy=(0, 0),  # Posición inicial
             xytext=(0, 5),  # Desplazamiento del texto respecto al punto (xy)
             textcoords="offset points",  # La posición de xytext es relativa a xy
-            bbox=dict(boxstyle="round,pad=0.3", fc="yellow", alpha=0.8),  # Cuadro de fondo
+            bbox=dict(
+                boxstyle="round,pad=0.3", fc="yellow", alpha=0.8
+            ),  # Cuadro de fondo
             fontsize=10,  # Tamaño del texto
             color="black",  # Color del texto
             ha="center",  # Alinear horizontalmente el texto en el centro
@@ -454,9 +471,17 @@ class App:
         self.clear_frame(self.frm_equalizer)
 
         # Crear canvas con barra de desplazamiento para evitar desbordamiento en la pantalla
-        self.scales_canvas = tk.Canvas(self.frm_equalizer, relief="groove", borderwidth=4)
-        self.scales_scrollbar = tk.Scrollbar(self.frm_equalizer, orient="horizontal", command=self.scales_canvas.xview)
-        self.scales_canvas.config(xscrollcommand=self.scales_scrollbar.set)  # Sincronizar Canvas con la barra de desplazamiento
+        self.scales_canvas = tk.Canvas(
+            self.frm_equalizer, relief="groove", borderwidth=4
+        )
+        self.scales_scrollbar = tk.Scrollbar(
+            self.frm_equalizer,
+            orient="horizontal",
+            command=self.scales_canvas.xview,
+        )
+        self.scales_canvas.config(
+            xscrollcommand=self.scales_scrollbar.set
+        )  # Sincronizar Canvas con la barra de desplazamiento
 
         # Se colocan el Canvas y la barra de desplazamiento
         self.scales_canvas.grid(row=0, column=0, sticky="nsew")
@@ -467,21 +492,42 @@ class App:
 
         # Crear un Frame dentro del scales_canvas para colocar los sliders
         self.frm_scales = tk.Frame(self.scales_canvas)
-        self.scales_canvas.create_window((0, 0), window=self.frm_scales, anchor="nw")
+        self.scales_canvas.create_window(
+            (0, 0), window=self.frm_scales, anchor="nw"
+        )
 
         band_type = self.band_type.get()
         self.equalizer_scales = []  # Reiniciar array con deslizadores
-        self.equalizer_scales_labels = []  # Reiniciar etiquetas para evitar duplicados
+        self.equalizer_scales_labels = (
+            []
+        )  # Reiniciar etiquetas para evitar duplicados
 
         if band_type == "1/1":
-            frequencies = NOMINAL_OCTAVE_FREC
+            frequencies = np.array(
+                [
+                    NOMINAL_OCTAVE_FREC[
+                        np.abs(NOMINAL_OCTAVE_FREC - f).argmin()
+                    ]
+                    for f in self.fm_selected_bands
+                ]
+            )
         elif band_type == "1/3":
-            frequencies = NOMINAL_THIRDOCTAVE_FREC
+            frequencies = np.array(
+                [
+                    NOMINAL_THIRDOCTAVE_FREC[
+                        np.abs(NOMINAL_THIRDOCTAVE_FREC - f).argmin()
+                    ]
+                    for f in self.fm_selected_bands
+                ]
+            )
 
-        for i, freq in enumerate(frequencies):
+        # Formatear la salida para evitar ".0" en enteros
+        formatted_frequencies = [int(f) if f.is_integer() else f for f in frequencies]
+
+        for i, freq in enumerate(formatted_frequencies):
             label_var = tk.StringVar(value="0.0 dB")
 
-            freq_label = ttk.Label(self.frm_scales, text=f'{freq} Hz')
+            freq_label = ttk.Label(self.frm_scales, text=f"{freq} Hz")
             freq_label.grid(row=0, column=i)
 
             freq_scale = ttk.Scale(
@@ -505,12 +551,13 @@ class App:
 
             self.equalizer_scales_labels.append(scale_label)
             self.equalizer_scales.append(freq_scale)
-        
+
         # Actualizar el área desplazable (scrollable region)
         self.frm_scales.update_idletasks()  # Actualiza la interfaz antes de ajustar el área desplazable
-        self.scales_canvas.config(scrollregion=self.scales_canvas.bbox("all"))  # Indica la región desplazable del Canvas, en este caso todo el Canvas
+        self.scales_canvas.config(
+            scrollregion=self.scales_canvas.bbox("all")
+        )  # Indica la región desplazable del Canvas, en este caso todo el Canvas
         self.scales_canvas.config(width=300, height=150)
-
 
     def create_widgets(self):
         """Crea los widgets de la interfaz"""
@@ -530,7 +577,9 @@ class App:
         self.frm_equalizer = ttk.Frame(
             self.root, padding=10, relief="groove", borderwidth=2
         )
-        self.frm_equalizer.grid(padx=10, pady=10, row=1, column=1, sticky="nsew")
+        self.frm_equalizer.grid(
+            padx=10, pady=10, row=1, column=1, sticky="nsew"
+        )
 
         # >>>>> Selección de ruido <<<<<
         ttk.Label(self.frm_options, text="Seleccione el tipo de ruido:").grid(
