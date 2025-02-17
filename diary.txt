@@ -134,3 +134,4 @@ DIARIO DEL TFG
         - El evento se llama on_hover() y lo he enlazado al canvas para que cunado se pase el ratón por encima se ejecute
         - Para poder mostrar el valor encima de la barra, he usado la función "annotate" de Matplotlib, que permite agregar notas o etiquetas en una gráfica en una posición específica.
     
+    - He colocado las barras del ecualizador debajo de la gráfica, al igual que he hecho que el 80% del ancho de la ventana sea para la gráfica y las barras, y el 20% restante para las opciones
