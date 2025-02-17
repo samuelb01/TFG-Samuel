@@ -31,11 +31,21 @@ from noise_generator import (
 
 class App:
     def __init__(self):
-
         # Configuración principal de la ventana
         self.root = tk.Tk()  # Ventana principal de la interfaz
         self.root.title("Ecualizador Gráfico")  # Título de la ventana
-        self.root.geometry("1200x600")  # Tamaño de la ventana
+
+        # 80% de la pantalla para el gráfico y el 20% para el menú de opciones
+        self.root.grid_columnconfigure(0, weight=2)
+        self.root.grid_columnconfigure(1, weight=8)
+
+        # Obtener tamaño de la pantalla en píxeles
+        screen_height = self.root.winfo_screenheight()
+        screen_width = self.root.winfo_screenwidth()
+
+        # Tamaño de la ventana (+0+0 para que se situe en la esquina superior izquierda)
+        # self.root.geometry(f"{screen_width}x{screen_height}+0+0")  
+        self.root.state("zoomed")
 
         # crea las variables de control de la interfaz
         self.init_widget_types()
@@ -63,8 +73,8 @@ class App:
 
     def activate_filter_buttons(self):
         """Activa los desplegables de la interfaz para las bandas"""
-        self.combo_high_freq.state(["!disabled"])
-        self.combo_low_freq.state(["!disabled"])
+        self.combo_high_freq.config(state="!disabled")
+        self.combo_low_freq.config(state="!disabled")
 
     def delete_and_change_entry_value(
         self, entry, value, initial_pos=0, final_pos=tk.END
@@ -87,7 +97,7 @@ class App:
                 self.combo_high_freq.get() != "",
             ]
         ):
-            self.btn_apply_filter.state(["!disabled"])
+            self.btn_apply_filter.config(state="!disabled")
 
     def check_medition_time_iso_16283_1(self):
         """Gestiona según las bandas a medir y el tiempo seleccionado si se cumple la norma ISO 16283-1:2014"""
@@ -188,17 +198,17 @@ class App:
 
         if filter_type != "":
             # Se activan los desplegables para selccionar bandas
-            self.combo_low_freq.state(["!disabled"])
-            self.combo_high_freq.state(["!disabled"])
+            self.combo_low_freq.config(state="!disabled")
+            self.combo_high_freq.config(state="!disabled")
 
             if filter_type == "low_pass":
                 self.combo_low_freq.set(bands[0])
-                self.combo_low_freq.state(["disabled"])
+                self.combo_low_freq.config(state="disabled")
                 self.combo_high_freq["values"] = bands
 
             elif filter_type == "high_pass":
                 self.combo_high_freq.set(bands[-1])
-                self.combo_high_freq.state(["disabled"])
+                self.combo_high_freq.config(state="disabled")
                 self.combo_low_freq["values"] = bands
 
             elif filter_type == "band_pass":
@@ -211,9 +221,9 @@ class App:
             elif filter_type == "all_pass":
                 # FALTA DESARROLLAR EL FILTRO
                 self.combo_low_freq.set(bands[0])
-                self.combo_low_freq.state(["disabled"])
+                self.combo_low_freq.config(state="disabled")
                 self.combo_high_freq.set(bands[-1])
-                self.combo_high_freq.state(["disabled"])
+                self.combo_high_freq.config(state="disabled")
 
     def apply_filter(self):
         """Realiza el filtrado seleccinado"""
@@ -331,10 +341,10 @@ class App:
                     self.annotation.set_text(f"{level:.1f} dB")  # Muestra el nivel en dB
                     self.annotation.xy = (freq, level + 1)  # Lo coloca sobre la barra
                     self.annotation.set_visible(True)  # Lo hace visible
-                    self.canvas.draw_idle()  # Redibuja solo si hay cambios
+                    self.plot_canvas.draw_idle()  # Redibuja solo si hay cambios
                     return
         self.annotation.set_visible(False)  # Oculta la anotación si no está sobre una barra
-        self.canvas.draw_idle()
+        self.plot_canvas.draw_idle()
 
     def create_plot(self):
         """Crea y actualiza la gráfica de la interfaz"""
@@ -346,7 +356,7 @@ class App:
             nominal_freq = NOMINAL_OCTAVE_FREC
 
         # Crear una figura de Matplotlib
-        self.figure = Figure(figsize=(10, 8))
+        self.figure = Figure(figsize=(10, 5))
         self.ax = self.figure.add_subplot(111)
         self.ax.set_title("Niveles por bandas")
 
@@ -399,14 +409,14 @@ class App:
         )  # Formato para mostrar Hz y dB
 
         # Crear un lienzo de Tkinter para la figura de Matplotlib
-        self.canvas = FigureCanvasTkAgg(self.figure, master=self.root)
-        self.canvas.draw()
-        self.canvas.get_tk_widget().grid(
+        self.plot_canvas = FigureCanvasTkAgg(self.figure, master=self.root)
+        self.plot_canvas.draw()
+        self.plot_canvas.get_tk_widget().grid(
             row=0, column=1, padx=10, pady=10
         )  # Mostrar el lienzo en la ventana
 
         # Conectar el evento de movimiento del ratón a la función
-        self.canvas.mpl_connect("motion_notify_event", self.on_hover)
+        self.plot_canvas.mpl_connect("motion_notify_event", self.on_hover)
 
     def init_widget_types(self):
         """Inicializa como variables de clase los diferentes widgets"""
@@ -416,20 +426,20 @@ class App:
 
     def on_filter_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de filtro"""
-        self.btn_apply_filter.state(["disabled"])
+        self.btn_apply_filter.config(state="disabled")
         self.clear_bands()
         self.update_bands()
         self.check_conditions()
 
     def on_band_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de banda"""
-        self.btn_apply_filter.state(["disabled"])
+        self.btn_apply_filter.config(state="disabled")
 
-        self.radio_btn_lowpass.state(["!disabled"])
-        self.radio_btn_highpass.state(["!disabled"])
-        self.radio_btn_bandpass.state(["!disabled"])
-        self.radio_btn_notch.state(["!disabled"])
-        self.radio_btn_allpass.state(["!disabled"])
+        self.radio_btn_lowpass.config(state="!disabled")
+        self.radio_btn_highpass.config(state="!disabled")
+        self.radio_btn_bandpass.config(state="!disabled")
+        self.radio_btn_notch.config(state="!disabled")
+        self.radio_btn_allpass.config(state="!disabled")
 
         self.clear_bands()
         self.update_bands()
@@ -442,8 +452,26 @@ class App:
     def create_equalizer_gui(self):
         """Crea la interfaz con los botones delizables para ecualizazr la señal"""
         self.clear_frame(self.frm_equalizer)
+
+        # Crear canvas con barra de desplazamiento para evitar desbordamiento en la pantalla
+        self.scales_canvas = tk.Canvas(self.frm_equalizer, relief="groove", borderwidth=4)
+        self.scales_scrollbar = tk.Scrollbar(self.frm_equalizer, orient="horizontal", command=self.scales_canvas.xview)
+        self.scales_canvas.config(xscrollcommand=self.scales_scrollbar.set)  # Sincronizar Canvas con la barra de desplazamiento
+
+        # Se colocan el Canvas y la barra de desplazamiento
+        self.scales_canvas.grid(row=0, column=0, sticky="nsew")
+        self.scales_scrollbar.grid(row=1, column=0, sticky="ew")
+
+        # Sliders ocupan todo el espacio del menú frm_equalizer
+        self.frm_equalizer.grid_columnconfigure(0, weight=1)
+
+        # Crear un Frame dentro del scales_canvas para colocar los sliders
+        self.frm_scales = tk.Frame(self.scales_canvas)
+        self.scales_canvas.create_window((0, 0), window=self.frm_scales, anchor="nw")
+
         band_type = self.band_type.get()
         self.equalizer_scales = []  # Reiniciar array con deslizadores
+        self.equalizer_scales_labels = []  # Reiniciar etiquetas para evitar duplicados
 
         if band_type == "1/1":
             frequencies = NOMINAL_OCTAVE_FREC
@@ -453,22 +481,22 @@ class App:
         for i, freq in enumerate(frequencies):
             label_var = tk.StringVar(value="0.0 dB")
 
-            freq_label = ttk.Label(self.frm_equalizer, text=f'{freq} Hz')
+            freq_label = ttk.Label(self.frm_scales, text=f'{freq} Hz')
             freq_label.grid(row=0, column=i)
 
             freq_scale = ttk.Scale(
-                self.frm_equalizer,
+                self.frm_scales,
                 from_=10,
                 to=-10,
                 orient="vertical",
                 command=lambda value, var=label_var: self.update_gain(
-                    value, var
+                    float(value), var
                 ),  # Enlazar cada slider con su propia etiqueta
             )
             freq_scale.grid(row=1, column=i)
 
             scale_label = ttk.Label(
-                self.frm_equalizer,
+                self.frm_scales,
                 textvariable=label_var,
                 width=8,  # Fijar un ancho fijo -> Tamaño máximo del texto "-xx.x_dB"
                 anchor="center",  # Texto etiqueta centrado
@@ -477,6 +505,11 @@ class App:
 
             self.equalizer_scales_labels.append(scale_label)
             self.equalizer_scales.append(freq_scale)
+        
+        # Actualizar el área desplazable (scrollable region)
+        self.frm_scales.update_idletasks()  # Actualiza la interfaz antes de ajustar el área desplazable
+        self.scales_canvas.config(scrollregion=self.scales_canvas.bbox("all"))  # Indica la región desplazable del Canvas, en este caso todo el Canvas
+        self.scales_canvas.config(width=300, height=150)
 
 
     def create_widgets(self):
@@ -485,19 +518,19 @@ class App:
         self.frm_options = ttk.Frame(
             self.root, padding=10, relief="groove", borderwidth=2
         )
-        self.frm_options.grid(padx=10, pady=10, row=0, column=0, sticky="n")
+        self.frm_options.grid(padx=10, pady=10, row=0, column=0, sticky="nsew")
 
         # Marco para el gráfico
         self.frm_graphic = ttk.Frame(
             self.root, padding=10, relief="groove", borderwidth=2
         )
-        self.frm_graphic.grid(padx=10, pady=10, row=0, column=1, sticky="n")
+        self.frm_graphic.grid(padx=10, pady=10, row=0, column=1, sticky="nsew")
 
         # Marco para el ecualizador
         self.frm_equalizer = ttk.Frame(
             self.root, padding=10, relief="groove", borderwidth=2
         )
-        self.frm_equalizer.grid(padx=10, pady=10, row=1, column=1, sticky="n")
+        self.frm_equalizer.grid(padx=10, pady=10, row=1, column=1, sticky="nsew")
 
         # >>>>> Selección de ruido <<<<<
         ttk.Label(self.frm_options, text="Seleccione el tipo de ruido:").grid(
@@ -616,14 +649,14 @@ class App:
             self.frm_options, state="readonly", postcommand=self.update_bands
         )
         self.combo_low_freq.grid(row=14, column=0, sticky="w")
-        self.combo_low_freq.state(["disabled"])
+        self.combo_low_freq.config(state="disabled")
         self.combo_low_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
         self.combo_high_freq = ttk.Combobox(
             self.frm_options, state="readonly", postcommand=self.update_bands
         )
         self.combo_high_freq.grid(row=14, column=1, sticky="w")
-        self.combo_high_freq.state(["disabled"])
+        self.combo_high_freq.config(state="disabled")
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
         # >>>>> Selección del tiempo de ruido <<<<<
@@ -645,7 +678,7 @@ class App:
                 self.check_selected_time_type(),
                 self.apply_filter(),
                 self.check_conditions(),
-                self.btn_play_noise.state(["!disabled"]),
+                self.btn_play_noise.config(state="!disabled"),
             ],
             state="disabled",
         )
@@ -657,7 +690,7 @@ class App:
             text="REPRODUCIR",
             command=lambda: [
                 self.start_noise_thread(),
-                self.btn_stop.state(["!disabled"]),
+                self.btn_stop.config(state="!disabled"),
             ],
             state="disabled",
         )
@@ -669,7 +702,7 @@ class App:
             text="STOP REPRODUCCIÓN",
             command=lambda: [
                 self.control_noise_event.set(),
-                self.btn_stop.state(["disabled"]),
+                self.btn_stop.config(state="disabled"),
             ],
             state="disabled",
         )
