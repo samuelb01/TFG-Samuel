@@ -346,7 +346,9 @@ class App:
         if (
             event.inaxes == self.ax
         ):  # Verifica si el cursor está dentro del área de la gráfica
-            for bar, level, freq in zip(self.bars, self.band_levels, self.fm_selected_bands):
+            for bar, level, freq in zip(
+                self.bars, self.band_levels, self.fm_selected_bands
+            ):
                 contains, _ = bar.contains(
                     event
                 )  # Verifica si el cursor está sobre una barra
@@ -393,6 +395,17 @@ class App:
             color="skyblue",
             edgecolor="black",
         )
+
+        # Crear puntos en la misma posición que las barras, cambiarán con la ecualización
+        self.scatter_points = self.ax.scatter(
+            self.fm_selected_bands, self.band_levels, color="red", zorder=3
+        )
+
+        # Obtener el nivel máximo de las bandas y agregar 15 dB
+        y_max = max(self.band_levels) + 15
+        # Ajustar límites del eje Y
+        self.ax.set_ylim(0, y_max)
+
         self.ax.set_xscale("log")
         self.ax.set_xlabel("Frecuencia (Hz)")
         self.ax.set_ylabel("Nivel (dB)")
@@ -441,6 +454,27 @@ class App:
         # Conectar el evento de movimiento del ratón a la función
         self.plot_canvas.mpl_connect("motion_notify_event", self.on_hover)
 
+    def update_plot_points(self):
+        """Actualiza los puntos rojos en el gráfico según los valores de los sliders"""
+        # Obtener los valores actuales de los sliders
+        new_levels = [scale.get() for scale in self.equalizer_scales]
+
+        # Sumar los valores de los sliders a los niveles originales
+        equalized_levels = np.array(self.band_levels) + np.array(new_levels)
+
+        # Actualizar la posición de los puntos en la gráfica
+        # Generar matriz de coordenadas X (frecuencia) e Y (niveles ecualizazdos) para cada punto
+        self.scatter_points.set_offsets(
+            np.c_[self.fm_selected_bands, equalized_levels]
+        )
+
+        # Eliminar la línea anterior si existe
+        if hasattr(self, "spline_line"):
+            self.spline_line.remove()
+        
+        # Redibujar el gráfico con los nuevos valores
+        self.plot_canvas.draw_idle()  # actualiza la gráfica sin bloquear la interfaz.
+
     def init_widget_types(self):
         """Inicializa como variables de clase los diferentes widgets"""
         self.noise_type = tk.StringVar()
@@ -469,12 +503,14 @@ class App:
         self.check_conditions()
 
     def update_gain(self, value, label_var):
-        """Actualiza la etiqueta del deslizador correspondiente"""
+        """Actualiza la etiqueta del deslizador correspondiente y
+        superpone en la gráfica la ganancia aplicada
+        """
         label_var.set(f"{float(value):.1f} dB")
+        self.update_plot_points()
 
     def reset_scales(self):
-        for scale in self.equalizer_scales:
-            scale.set(0)
+        [scale.set(0) for scale in self.equalizer_scales]
 
     def create_equalizer_gui(self):
         """Crea la interfaz con los botones delizables para ecualizazr la señal"""
@@ -532,7 +568,9 @@ class App:
             )
 
         # Formatear la salida para evitar ".0" en enteros
-        formatted_frequencies = [int(f) if f.is_integer() else f for f in frequencies]
+        formatted_frequencies = [
+            int(f) if f.is_integer() else f for f in frequencies
+        ]
 
         for i, freq in enumerate(formatted_frequencies):
             label_var = tk.StringVar(value="0.0 dB")
@@ -571,7 +609,11 @@ class App:
 
     def create_equalizer_gui_buttons(self):
         """Crea los botones para gestionar las barras del ecualizador en el frm_equalizer_options"""
-        btn_reset_scales = ttk.Button(self.frm_equalizer_options, text="REINICIAR DESLIZADORES", command=self.reset_scales)
+        btn_reset_scales = ttk.Button(
+            self.frm_equalizer_options,
+            text="REINICIAR DESLIZADORES",
+            command=self.reset_scales,
+        )
         btn_reset_scales.grid(row=0, column=0)
 
     def create_widgets(self):

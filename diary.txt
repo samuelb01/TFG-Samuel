@@ -148,4 +148,8 @@ DIARIO DEL TFG
         - Había llamado a una función con la palabra medition y no existe en inglés, es measurement.
     
     - Creado botón que resetea los sliders cunado se pulsa, este botón solo se crea cuando se aplcia el filtro, este botón usa la función reset_scales qe se encarga de usar el .set(0) de cada reset_scale
-    
+
+    - He hecho que el gráfico represente el eje de los dB 15dB por encima del mayor valor en ese mismo eje, para que al mover los puntos de la ecualización se vean en pantalla
+
+    - He dibujado unos puntos en cada banda filtrada para que se vea visualmente cómo va a afectar cada ecualización
+    - Nueva función update_plot_points() que se encarga de cambiar los puntos en cada barra que indican la ecualización que se va a realizar en dicha banda.
