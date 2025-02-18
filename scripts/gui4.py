@@ -35,9 +35,13 @@ class App:
         self.root = tk.Tk()  # Ventana principal de la interfaz
         self.root.title("Ecualizador Gráfico")  # Título de la ventana
 
-        # 80% de la pantalla para el gráfico y el 20% para el menú de opciones
-        self.root.grid_columnconfigure(0, weight=2)
-        self.root.grid_columnconfigure(1, weight=8)
+        # 85% del ancho de la pantalla para el gráfico y el 15% para el menú de opciones
+        self.root.grid_columnconfigure(0, weight=15)
+        self.root.grid_columnconfigure(1, weight=100)
+
+        # 70% de la altua de la pantalla para el gráfico y el 30% para el menú de opciones
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_rowconfigure(1, weight=50)
 
         # Obtener tamaño de la pantalla en píxeles
         screen_height = self.root.winfo_screenheight()
@@ -74,8 +78,8 @@ class App:
 
     def activate_filter_buttons(self):
         """Activa los desplegables de la interfaz para las bandas"""
-        self.combo_high_freq.config(state="!disabled")
-        self.combo_low_freq.config(state="!disabled")
+        self.combo_high_freq.config(state="readonly")
+        self.combo_low_freq.config(state="readonly")
 
     def delete_and_change_entry_value(
         self, entry, value, initial_pos=0, final_pos=tk.END
@@ -100,7 +104,7 @@ class App:
         ):
             self.btn_apply_filter.config(state="!disabled")
 
-    def check_medition_time_iso_16283_1(self):
+    def check_measurement_time_iso_16283_1(self):
         """Gestiona según las bandas a medir y el tiempo seleccionado si se cumple la norma ISO 16283-1:2014"""
         time_entry = float(self.time_entry.get())
         fl = float(self.combo_low_freq.get())
@@ -153,7 +157,7 @@ class App:
                         f"La duración introducida no sigue ningún formato válido, introduzca un número o deje en blanco para valor por defecto ({DURATION})",
                     )
         else:
-            self.check_medition_time_iso_16283_1()
+            self.check_measurement_time_iso_16283_1()
 
     def clear_bands(self):
         """Vacía los valores de las bandas de frecuencias al cambiar de tipo de banda"""
@@ -171,7 +175,7 @@ class App:
         return bands
 
     def update_bandpass(self, bands, fl, fh):
-        """Actualzia las bandas seleccionables si se marca el filtro paso banda"""
+        """Actualiza las bandas seleccionables si se marca el filtro paso banda"""
         if fl == "" and fh == "":  # Ninguna seleccionada
             self.combo_low_freq["values"] = bands
             self.combo_high_freq["values"] = bands
@@ -199,8 +203,8 @@ class App:
 
         if filter_type != "":
             # Se activan los desplegables para selccionar bandas
-            self.combo_low_freq.config(state="!disabled")
-            self.combo_high_freq.config(state="!disabled")
+            self.combo_low_freq.config(state="readonly")
+            self.combo_high_freq.config(state="readonly")
 
             if filter_type == "low_pass":
                 self.combo_low_freq.set(bands[0])
@@ -311,28 +315,30 @@ class App:
         """Reproduce el ruido generado"""
         p = pyaudio.PyAudio()  # Inicializar PyAudio
 
-        stream = p.open(
-            format=pyaudio.paInt16,  # Formato de audio
-            channels=1,  # 1 = Mono
-            rate=SAMPLE_RATE,  # Frecuencia de muestreo
-            output=True,  # Salida de audio
-        )  # Abrir stream de audio
+        try:
+            stream = p.open(
+                format=pyaudio.paInt16,  # Formato de audio
+                channels=1,  # 1 = Mono
+                rate=SAMPLE_RATE,  # Frecuencia de muestreo
+                output=True,  # Salida de audio
+            )  # Abrir stream de audio
 
-        chunk = 1024  # Tamaño del chunk
-        start = 0  # Inicio de la reproducción
+            chunk = 1024  # Tamaño del chunk
+            start = 0  # Inicio de la reproducción
 
-        while not self.control_noise_event.is_set() and start < len(
-            self.filtered_noise
-        ):  # Mientras el evento no esté activado
-            end = start + chunk  # Fin de la reproducción
-            stream.write(
-                self.filtered_noise[start:end].astype(np.int16).tobytes()
-            )  # Reproducir audio
-            start = end  # Actualizar inicio de la reproducción
+            while not self.control_noise_event.is_set() and start < len(
+                self.filtered_noise
+            ):  # Mientras el evento no esté activado
+                end = start + chunk  # Fin de la reproducción
+                stream.write(
+                    self.filtered_noise[start:end].astype(np.int16).tobytes()
+                )  # Reproducir audio
+                start = end  # Actualizar inicio de la reproducción
 
-        stream.stop_stream()  # Detener stream
-        stream.close()  # Cerrar stream
-        p.terminate()  # Cerrar PyAudio
+        finally:
+            stream.stop_stream()  # Detener stream
+            stream.close()  # Cerrar stream
+            p.terminate()  # Cerrar PyAudio
 
     # Función para mostrar el valor al pasar el cursor
     def on_hover(self, event):
@@ -579,6 +585,14 @@ class App:
         )
         self.frm_equalizer.grid(
             padx=10, pady=10, row=1, column=1, sticky="nsew"
+        )
+
+        # Marco para las opciones del ecualizzador
+        self.frm_equalizer_options = ttk.Frame(
+            self.root, padding=10, relief="groove", borderwidth=2
+        )
+        self.frm_equalizer_options.grid(
+            padx=10, pady=10, row=1, column=0, sticky="nsew"
         )
 
         # >>>>> Selección de ruido <<<<<

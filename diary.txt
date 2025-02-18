@@ -141,3 +141,8 @@ DIARIO DEL TFG
     - Ahora se muestran solo los sliders correspondientes a las bandas seleccionadas.
 
     - He arreglado un error que hacía que al hacer un filtro paso alto, las etiquetas con los niveles no se mostrasen encima de las barras.
+
+18/02/2025
+    - He arreglado un par de errores
+        - Se podía escribir un valor en el menú de seleccionar bandas.
+        - Había llamado a una función con la palabra medition y no existe en inglés, es measurement.
