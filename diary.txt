@@ -146,3 +146,6 @@ DIARIO DEL TFG
     - He arreglado un par de errores
         - Se podía escribir un valor en el menú de seleccionar bandas.
         - Había llamado a una función con la palabra medition y no existe en inglés, es measurement.
+    
+    - Creado botón que resetea los sliders cunado se pulsa, este botón solo se crea cuando se aplcia el filtro, este botón usa la función reset_scales qe se encarga de usar el .set(0) de cada reset_scale
+    

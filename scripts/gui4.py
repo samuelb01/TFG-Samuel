@@ -59,18 +59,18 @@ class App:
         self.control_noise_event = threading.Event()
 
         # Variables una vez filtrado
-        self.filtered_noise = None
-        self.band_levels = None
-        self.fm = None
-        self.fl_selected_bands = None
-        self.fm_selected_bands = None
-        self.fh_selected_bands = None
-        self.bars = None
-        self.label_var = None
-        self.equalizer_scales = []  # Array con todos los deslizadores
-        self.equalizer_scales_labels = (
-            []
-        )  # Array con etiquetas de valores de los deslizadores
+        # self.filtered_noise = None
+        # self.band_levels = None
+        # self.fm = None
+        # self.fl_selected_bands = None
+        # self.fm_selected_bands = None
+        # self.fh_selected_bands = None
+        # self.bars = None
+        # self.label_var = None
+        # self.equalizer_scales = []  # Array con todos los deslizadores
+        # self.equalizer_scales_labels = (
+        #     []
+        # )  # Array con etiquetas de valores de los deslizadores
 
         # Crea la interfaz de la app y la inicializa
         self.create_widgets()
@@ -289,6 +289,7 @@ class App:
 
                 self.create_plot()
                 self.create_equalizer_gui()
+                self.create_equalizer_gui_buttons()
 
     def start_noise_thread(self):
         """Inicia el hilo para reproducir el ruido"""
@@ -345,7 +346,6 @@ class App:
         if (
             event.inaxes == self.ax
         ):  # Verifica si el cursor está dentro del área de la gráfica
-            print(self.band_levels)
             for bar, level, freq in zip(self.bars, self.band_levels, self.fm_selected_bands):
                 contains, _ = bar.contains(
                     event
@@ -472,6 +472,10 @@ class App:
         """Actualiza la etiqueta del deslizador correspondiente"""
         label_var.set(f"{float(value):.1f} dB")
 
+    def reset_scales(self):
+        for scale in self.equalizer_scales:
+            scale.set(0)
+
     def create_equalizer_gui(self):
         """Crea la interfaz con los botones delizables para ecualizazr la señal"""
         self.clear_frame(self.frm_equalizer)
@@ -564,6 +568,11 @@ class App:
             scrollregion=self.scales_canvas.bbox("all")
         )  # Indica la región desplazable del Canvas, en este caso todo el Canvas
         self.scales_canvas.config(width=300, height=150)
+
+    def create_equalizer_gui_buttons(self):
+        """Crea los botones para gestionar las barras del ecualizador en el frm_equalizer_options"""
+        btn_reset_scales = ttk.Button(self.frm_equalizer_options, text="REINICIAR DESLIZADORES", command=self.reset_scales)
+        btn_reset_scales.grid(row=0, column=0)
 
     def create_widgets(self):
         """Crea los widgets de la interfaz"""
