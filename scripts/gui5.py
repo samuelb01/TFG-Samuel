@@ -19,27 +19,29 @@ from config import (
     NOMINAL_THIRDOCTAVE_FREC,
 )
 
+# Importar funciones para filtrar
 from filters4 import (
     thirdOctaveFilter,
     octaveFilter,
-)  # Importar las funciones necesarias
+)  
+
+# Importar funciones para crear ruidos
 from noise_generator import (
     generate_white_noise,
-    generate_pink_noise,
-)  # Importar funciones para crear ruidos
-
+    generate_pink_noise
+)
 
 class App:
     def __init__(self):
         # Configuración principal de la ventana
         self.root = tk.Tk()  # Ventana principal de la interfaz
-        self.root.title("Ecualizador Gráfico")  # Título de la ventana
+        self.root.title("Ecualizador Gráfico")
 
         # 85% del ancho de la pantalla para el gráfico y el 15% para el menú de opciones
         self.root.grid_columnconfigure(0, weight=15)
         self.root.grid_columnconfigure(1, weight=100)
 
-        # 70% de la altua de la pantalla para el gráfico y el 30% para el menú de opciones
+        # 70% de la altura de la pantalla para el gráfico y el 30% para el menú de opciones
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_rowconfigure(1, weight=50)
 
@@ -49,11 +51,8 @@ class App:
 
         # Tamaño de la ventana (+0+0 para que se situe en la esquina superior izquierda)
         # self.root.geometry(f"{screen_width}x{screen_height}+0+0")
-        self.root.state("zoomed")
-
-        # crea las variables de control de la interfaz
-        self.init_widget_types()
-
+        self.root.state("zoomed")  # Pantalla completa
+        
         # Variables de control (hilos de ejecución)
         self.noise_thread = None
         self.control_noise_event = threading.Event()
@@ -68,167 +67,15 @@ class App:
         self.bars = None
         self.label_var = None
         self.equalizer_scales = []  # Array con todos los deslizadores
-        self.equalizer_scales_labels = (
-            []
-        )  # Array con etiquetas de valores de los deslizadores
+        # Array con etiquetas de valores de los deslizadores
+        self.equalizer_scales_labels = []  
+
+        # crea las variables de control de la interfaz
+        self.init_widget_types()
 
         # Crea la interfaz de la app y la inicializa
         self.create_widgets()
         self.root.mainloop()
-
-    def activate_filter_buttons(self):
-        """Activa los desplegables de la interfaz para las bandas"""
-        self.combo_high_freq.config(state="readonly")
-        self.combo_low_freq.config(state="readonly")
-
-    def delete_and_change_entry_value(
-        self, entry, value, initial_pos=0, final_pos=tk.END
-    ):
-        entry.delete(initial_pos, final_pos)
-        entry.insert(initial_pos, value)
-
-    def clear_frame(self, frame):
-        """Elimina todos los widgets dentro del frame"""
-        for widget in frame.winfo_children():
-            widget.destroy()
-
-    def check_conditions(self, event=None):
-        """Comprueba si se puede activar el botón de filtrado"""
-        if all(
-            [
-                self.noise_type.get() != "",
-                self.band_type.get() != "",
-                self.combo_low_freq.get() != "",
-                self.combo_high_freq.get() != "",
-            ]
-        ):
-            self.btn_apply_filter.config(state="!disabled")
-
-    def check_measurement_time_iso_16283_1(self):
-        """Gestiona según las bandas a medir y el tiempo seleccionado si se cumple la norma ISO 16283-1:2014"""
-        time_entry = float(self.time_entry.get())
-        fl = float(self.combo_low_freq.get())
-
-        if fl >= 500:
-            required_time = 4
-        elif 100 <= fl <= 400:
-            required_time = 6
-        elif fl <= 80:
-            required_time = 15
-
-        # Se comprueba se el tiempo introducido es menor al requerido por la norma
-        if time_entry < required_time:
-            self.delete_and_change_entry_value(self.time_entry, required_time)
-            messagebox.showwarning(
-                "ADVERTENCIA",
-                f"Se ha cambiado automaticamente la duración a {required_time} ya que con la duración introducida no se cumplía la norma ISO 16283-1:2014",
-            )
-        else:
-            if time_entry != int(
-                time_entry
-            ):  # Tipo float introducido -> cambio a int
-                self.delete_and_change_entry_value(
-                    self.time_entry, int(time_entry)
-                )
-                messagebox.showwarning(
-                    "ADVERTENCIA",
-                    f"Se ha cambiado automaticamente la duración a {self.time_entry.get()} segundos por haber introducido un valor decimal",
-                )
-
-    def check_selected_time_type(self):
-        """Comprobar el tipo de los segundos elegidos"""
-        try:
-            float(
-                self.time_entry.get()
-            )  # Obtengo el valor de tiempo introducido e intento convertirlo a float
-        except:
-            match self.time_entry.get():
-                case "":
-                    messagebox.showinfo(
-                        "INFORMACIÓN",
-                        f"Como no se ha introducido ninguna duración se establece por defecto {DURATION} segundos",
-                    )
-                    self.delete_and_change_entry_value(
-                        self.time_entry, DURATION
-                    )
-                case _:
-                    messagebox.showerror(
-                        "ERROR",
-                        f"La duración introducida no sigue ningún formato válido, introduzca un número o deje en blanco para valor por defecto ({DURATION})",
-                    )
-        else:
-            self.check_measurement_time_iso_16283_1()
-
-    def clear_bands(self):
-        """Vacía los valores de las bandas de frecuencias al cambiar de tipo de banda"""
-        self.combo_low_freq.set("")
-        self.combo_high_freq.set("")
-
-    def change_band_type(self):
-        """Modifica dinámicamente las bandas seleccionables según el tipo de filtro elegido"""
-        if self.band_type.get() == "1/3":
-            bands = NOMINAL_THIRDOCTAVE_FREC
-
-        elif self.band_type.get() == "1/1":
-            bands = NOMINAL_OCTAVE_FREC
-
-        return bands
-
-    def update_bandpass(self, bands, fl, fh):
-        """Actualiza las bandas seleccionables si se marca el filtro paso banda"""
-        if fl == "" and fh == "":  # Ninguna seleccionada
-            self.combo_low_freq["values"] = bands
-            self.combo_high_freq["values"] = bands
-
-        elif fl != "" and fh != "":  # Una de las dos
-            self.combo_high_freq["values"] = bands[bands.index(float(fl)) :]
-            self.combo_low_freq["values"] = bands[: bands.index(float(fh)) + 1]
-
-        # Ambas seleccionadas
-        if fl != "":
-            self.combo_high_freq["values"] = bands[bands.index(float(fl)) :]
-        elif fh != "":
-            self.combo_low_freq["values"] = bands[: bands.index(float(fh)) + 1]
-
-    def update_bands(self):
-        """Actualiza las bandas a seleccionar en los desplegables de la interfaz"""
-        bands = self.change_band_type()
-
-        # Frecuencias de corte marcadas
-        fl = self.combo_low_freq.get()
-        fh = self.combo_high_freq.get()
-
-        # Ver el tipo de filtro seleccionado
-        filter_type = self.filter_type.get()
-
-        if filter_type != "":
-            # Se activan los desplegables para selccionar bandas
-            self.combo_low_freq.config(state="readonly")
-            self.combo_high_freq.config(state="readonly")
-
-            if filter_type == "low_pass":
-                self.combo_low_freq.set(bands[0])
-                self.combo_low_freq.config(state="disabled")
-                self.combo_high_freq["values"] = bands
-
-            elif filter_type == "high_pass":
-                self.combo_high_freq.set(bands[-1])
-                self.combo_high_freq.config(state="disabled")
-                self.combo_low_freq["values"] = bands
-
-            elif filter_type == "band_pass":
-                self.update_bandpass(bands, fl, fh)
-
-            elif filter_type == "notch":
-                # FALTA DESARROLLAR EL FILTRO NOTCH
-                self.update_bandpass(bands, fl, fh)
-
-            elif filter_type == "all_pass":
-                # FALTA DESARROLLAR EL FILTRO
-                self.combo_low_freq.set(bands[0])
-                self.combo_low_freq.config(state="disabled")
-                self.combo_high_freq.set(bands[-1])
-                self.combo_high_freq.config(state="disabled")
 
     def apply_filter(self):
         """Realiza el filtrado seleccinado"""
@@ -290,7 +137,7 @@ class App:
                 self.create_plot()
                 self.create_equalizer_gui()
                 self.create_equalizer_gui_buttons()
-
+    
     def start_noise_thread(self):
         """Inicia el hilo para reproducir el ruido"""
         self.stop_noise()  # Verificar si el hilo de reproducción está activo y si lo está lo apaga
@@ -341,8 +188,81 @@ class App:
             stream.close()  # Cerrar stream
             p.terminate()  # Cerrar PyAudio
 
-    # Función para mostrar el valor al pasar el cursor
+    def check_conditions(self, event=None):
+        """Comprueba si se puede activar el botón de filtrado"""
+        if all(
+            [
+                self.noise_type.get() != "",
+                self.band_type.get() != "",
+                self.combo_low_freq.get() != "",
+                self.combo_high_freq.get() != "",
+            ]
+        ):
+            self.btn_apply_filter.config(state="!disabled")
+    
+    def check_measurement_time_iso_16283_1(self):
+        """Gestiona según las bandas a medir y el tiempo seleccionado si se cumple la norma ISO 16283-1:2014"""
+        time_entry = float(self.time_entry.get())
+        fl = float(self.combo_low_freq.get())
+
+        if fl >= 500:
+            required_time = 4
+        elif 100 <= fl <= 400:
+            required_time = 6
+        elif fl <= 80:
+            required_time = 15
+
+        # Se comprueba se el tiempo introducido es menor al requerido por la norma
+        if time_entry < required_time:
+            self.delete_and_change_entry_value(self.time_entry, required_time)
+            messagebox.showwarning(
+                "ADVERTENCIA",
+                f"Se ha cambiado automaticamente la duración a {required_time} ya que con la duración introducida no se cumplía la norma ISO 16283-1:2014",
+            )
+        else:
+            if time_entry != int(
+                time_entry
+            ):  # Tipo float introducido -> cambio a int
+                self.delete_and_change_entry_value(
+                    self.time_entry, int(time_entry)
+                )
+                messagebox.showwarning(
+                    "ADVERTENCIA",
+                    f"Se ha cambiado automaticamente la duración a {self.time_entry.get()} segundos por haber introducido un valor decimal",
+                )
+    
+    def check_selected_time_type(self):
+        """Comprobar el tipo de los segundos elegidos"""
+        try:
+            float(
+                self.time_entry.get()
+            )  # Obtengo el valor de tiempo introducido e intento convertirlo a float
+        except:
+            match self.time_entry.get():
+                case "":
+                    messagebox.showinfo(
+                        "INFORMACIÓN",
+                        f"Como no se ha introducido ninguna duración se establece por defecto {DURATION} segundos",
+                    )
+                    self.delete_and_change_entry_value(
+                        self.time_entry, DURATION
+                    )
+                case _:
+                    messagebox.showerror(
+                        "ERROR",
+                        f"La duración introducida no sigue ningún formato válido, introduzca un número o deje en blanco para valor por defecto ({DURATION})",
+                    )
+        else:
+            self.check_measurement_time_iso_16283_1()
+
+    def delete_and_change_entry_value(
+        self, entry, value, initial_pos=0, final_pos=tk.END
+    ):
+        entry.delete(initial_pos, final_pos)
+        entry.insert(initial_pos, value)
+
     def on_hover(self, event):
+        """Función para mostrar el valor al pasar el cursor"""
         if (
             event.inaxes == self.ax
         ):  # Verifica si el cursor está dentro del área de la gráfica
@@ -460,6 +380,7 @@ class App:
         new_levels = [scale.get() for scale in self.equalizer_scales]
 
         # Sumar los valores de los sliders a los niveles originales
+        print(self.equalizer_scales)
         equalized_levels = np.array(self.band_levels) + np.array(new_levels)
 
         # Actualizar la posición de los puntos en la gráfica
@@ -475,11 +396,117 @@ class App:
         # Redibujar el gráfico con los nuevos valores
         self.plot_canvas.draw_idle()  # actualiza la gráfica sin bloquear la interfaz.
 
-    def init_widget_types(self):
-        """Inicializa como variables de clase los diferentes widgets"""
-        self.noise_type = tk.StringVar()
-        self.band_type = tk.StringVar()
-        self.filter_type = tk.StringVar()
+    def clear_frame(self, frame):
+        """Elimina todos los widgets dentro del frame"""
+        for widget in frame.winfo_children():
+            widget.destroy()
+            
+    def clear_bands(self):
+        """Vacía los valores de las bandas de frecuencias al cambiar de tipo de banda"""
+        self.combo_low_freq.set("")
+        self.combo_high_freq.set("")    
+
+    def reset_scales(self):
+        [scale.set(0) for scale in self.equalizer_scales]
+
+    def change_band_type(self):
+        """Modifica dinámicamente las bandas seleccionables según el tipo de filtro elegido"""
+        if self.band_type.get() == "1/3":
+            bands = NOMINAL_THIRDOCTAVE_FREC
+
+        elif self.band_type.get() == "1/1":
+            bands = NOMINAL_OCTAVE_FREC
+
+        return bands
+    
+    def update_bandpass(self, bands, fl, fh):
+        """Actualiza las bandas seleccionables si se marca el filtro paso banda"""
+        if fl == "" and fh == "":  # Ninguna seleccionada
+            self.combo_low_freq["values"] = bands
+            self.combo_high_freq["values"] = bands
+
+        elif fl != "" and fh != "":  # Una de las dos
+            self.combo_high_freq["values"] = bands[bands.index(float(fl)) :]
+            self.combo_low_freq["values"] = bands[: bands.index(float(fh)) + 1]
+
+        # Ambas seleccionadas
+        if fl != "":
+            self.combo_high_freq["values"] = bands[bands.index(float(fl)) :]
+        elif fh != "":
+            self.combo_low_freq["values"] = bands[: bands.index(float(fh)) + 1]
+
+    def update_bands(self):
+        """Actualiza las bandas a seleccionar en los desplegables de la interfaz"""
+        bands = self.change_band_type()
+
+        # Frecuencias de corte marcadas
+        fl = self.combo_low_freq.get()
+        fh = self.combo_high_freq.get()
+
+        # Ver el tipo de filtro seleccionado
+        filter_type = self.filter_type.get()
+
+        if filter_type != "":
+            # Se activan los desplegables para selccionar bandas
+            self.combo_low_freq.config(state="readonly")
+            self.combo_high_freq.config(state="readonly")
+
+            if filter_type == "low_pass":
+                self.combo_low_freq.set(bands[0])
+                self.combo_low_freq.config(state="disabled")
+                self.combo_high_freq["values"] = bands
+
+            elif filter_type == "high_pass":
+                self.combo_high_freq.set(bands[-1])
+                self.combo_high_freq.config(state="disabled")
+                self.combo_low_freq["values"] = bands
+
+            elif filter_type == "band_pass":
+                self.update_bandpass(bands, fl, fh)
+
+            elif filter_type == "notch":
+                # FALTA DESARROLLAR EL FILTRO NOTCH
+                self.update_bandpass(bands, fl, fh)
+
+            elif filter_type == "all_pass":
+                # FALTA DESARROLLAR EL FILTRO
+                self.combo_low_freq.set(bands[0])
+                self.combo_low_freq.config(state="disabled")
+                self.combo_high_freq.set(bands[-1])
+                self.combo_high_freq.config(state="disabled")
+
+    def update_plot_points(self):
+        """Actualiza los puntos rojos en el gráfico según los valores de los sliders"""
+        # Obtener los valores actuales de los sliders
+        new_levels = [scale.get() for scale in self.equalizer_scales]
+
+        # Sumar los valores de los sliders a los niveles originales
+        equalized_levels = np.array(self.band_levels) + np.array(new_levels)
+
+        # Actualizar la posición de los puntos en la gráfica
+        # Generar matriz de coordenadas X (frecuencia) e Y (niveles ecualizazdos) para cada punto
+        self.scatter_points.set_offsets(
+            np.c_[self.fm_selected_bands, equalized_levels]
+        )
+
+        # Eliminar la línea anterior si existe
+        if hasattr(self, "spline_line"):
+            self.spline_line.remove()
+        
+        # Redibujar el gráfico con los nuevos valores
+        self.plot_canvas.draw_idle()  # actualiza la gráfica sin bloquear la interfaz.
+    
+    def update_gain(self, value, label_var):
+        """Actualiza la etiqueta del deslizador correspondiente y
+        superpone en la gráfica la ganancia aplicada
+        """
+        label_var.set(f"{float(value):.1f} dB")
+        self.update_plot_points()
+
+    def activate_filter_buttons(self):
+        """Activa los desplegables de la interfaz para las bandas"""
+        self.combo_high_freq.config(state="readonly")
+        self.combo_low_freq.config(state="readonly")
 
     def on_filter_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de filtro"""
@@ -487,7 +514,7 @@ class App:
         self.clear_bands()
         self.update_bands()
         self.check_conditions()
-
+    
     def on_band_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de banda"""
         self.btn_apply_filter.config(state="disabled")
@@ -502,15 +529,11 @@ class App:
         self.update_bands()
         self.check_conditions()
 
-    def update_gain(self, value, label_var):
-        """Actualiza la etiqueta del deslizador correspondiente y
-        superpone en la gráfica la ganancia aplicada
-        """
-        label_var.set(f"{float(value):.1f} dB")
-        self.update_plot_points()
-
-    def reset_scales(self):
-        [scale.set(0) for scale in self.equalizer_scales]
+    def init_widget_types(self):
+        """Inicializa como variables de clase los diferentes widgets"""
+        self.noise_type = tk.StringVar()
+        self.band_type = tk.StringVar()
+        self.filter_type = tk.StringVar()
 
     def create_equalizer_gui(self):
         """Crea la interfaz con los botones delizables para ecualizazr la señal"""
