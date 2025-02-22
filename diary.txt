@@ -156,3 +156,7 @@ DIARIO DEL TFG
 
 19/02/2025
     - He creado gui5.py donde he reestructurado el código completo para encontrar mejor las funciones.
+
+22/02/2025
+    - He reducido el tamaño de lagunas funciones creando funciones más pequeñas para poder entender mejor el código y encontrar más fácilmente las cosas.
+    - He instalado pyinstall para crear un archivo ejecutable de mi programa. main.exe
