@@ -770,7 +770,6 @@ class App:
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
     def create_entry_noise_time(self):
-        self.create_entry_noise_time()
         ttk.Label(
             self.frm_options, text="\nIntroduzca los segundos a reproducir:"
         ).grid(row=15, sticky="w")
