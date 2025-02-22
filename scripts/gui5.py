@@ -419,7 +419,7 @@ class App:
 
         return bands
     
-    def update_bandpass(self, bands, fl, fh):
+    def update_bandpass_type(self, bands, fl, fh):
         """Actualiza las bandas seleccionables si se marca el filtro paso banda"""
         if fl == "" and fh == "":  # Ninguna seleccionada
             self.combo_low_freq["values"] = bands
@@ -462,11 +462,11 @@ class App:
                 self.combo_low_freq["values"] = bands
 
             elif filter_type == "band_pass":
-                self.update_bandpass(bands, fl, fh)
+                self.update_bandpass_type(bands, fl, fh)
 
             elif filter_type == "notch":
                 # FALTA DESARROLLAR EL FILTRO NOTCH
-                self.update_bandpass(bands, fl, fh)
+                self.update_bandpass_type(bands, fl, fh)
 
             elif filter_type == "all_pass":
                 # FALTA DESARROLLAR EL FILTRO
@@ -535,6 +535,35 @@ class App:
         self.band_type = tk.StringVar()
         self.filter_type = tk.StringVar()
 
+    def update_scales_values_and_labels(self, formatted_frequencies):
+        for i, freq in enumerate(formatted_frequencies):
+            label_var = tk.StringVar(value="0.0 dB")
+
+            freq_label = ttk.Label(self.frm_scales, text=f"{freq} Hz")
+            freq_label.grid(row=0, column=i)
+
+            freq_scale = ttk.Scale(
+                self.frm_scales,
+                from_=10,
+                to=-10,
+                orient="vertical",
+                command=lambda value, var=label_var: self.update_gain(
+                    float(value), var
+                ),  # Enlazar cada slider con su propia etiqueta
+            )
+            freq_scale.grid(row=1, column=i)
+
+            scale_label = ttk.Label(
+                self.frm_scales,
+                textvariable=label_var,
+                width=8,  # Fijar un ancho fijo -> Tamaño máximo del texto "-xx.x_dB"
+                anchor="center",  # Texto etiqueta centrado
+            )
+            scale_label.grid(row=2, column=i)
+
+            self.equalizer_scales_labels.append(scale_label)
+            self.equalizer_scales.append(freq_scale)
+
     def create_equalizer_gui(self):
         """Crea la interfaz con los botones delizables para ecualizazr la señal"""
         self.clear_frame(self.frm_equalizer)
@@ -595,33 +624,7 @@ class App:
             int(f) if f.is_integer() else f for f in frequencies
         ]
 
-        for i, freq in enumerate(formatted_frequencies):
-            label_var = tk.StringVar(value="0.0 dB")
-
-            freq_label = ttk.Label(self.frm_scales, text=f"{freq} Hz")
-            freq_label.grid(row=0, column=i)
-
-            freq_scale = ttk.Scale(
-                self.frm_scales,
-                from_=10,
-                to=-10,
-                orient="vertical",
-                command=lambda value, var=label_var: self.update_gain(
-                    float(value), var
-                ),  # Enlazar cada slider con su propia etiqueta
-            )
-            freq_scale.grid(row=1, column=i)
-
-            scale_label = ttk.Label(
-                self.frm_scales,
-                textvariable=label_var,
-                width=8,  # Fijar un ancho fijo -> Tamaño máximo del texto "-xx.x_dB"
-                anchor="center",  # Texto etiqueta centrado
-            )
-            scale_label.grid(row=2, column=i)
-
-            self.equalizer_scales_labels.append(scale_label)
-            self.equalizer_scales.append(freq_scale)
+        self.update_scales_values_and_labels(formatted_frequencies)
 
         # Actualizar el área desplazable (scrollable region)
         self.frm_scales.update_idletasks()  # Actualiza la interfaz antes de ajustar el área desplazable
@@ -639,37 +642,7 @@ class App:
         )
         btn_reset_scales.grid(row=0, column=0)
 
-    def create_widgets(self):
-        """Crea los widgets de la interfaz"""
-        # Marco para agrupar los widgets
-        self.frm_options = ttk.Frame(
-            self.root, padding=10, relief="groove", borderwidth=2
-        )
-        self.frm_options.grid(padx=10, pady=10, row=0, column=0, sticky="nsew")
-
-        # Marco para el gráfico
-        self.frm_graphic = ttk.Frame(
-            self.root, padding=10, relief="groove", borderwidth=2
-        )
-        self.frm_graphic.grid(padx=10, pady=10, row=0, column=1, sticky="nsew")
-
-        # Marco para el ecualizador
-        self.frm_equalizer = ttk.Frame(
-            self.root, padding=10, relief="groove", borderwidth=2
-        )
-        self.frm_equalizer.grid(
-            padx=10, pady=10, row=1, column=1, sticky="nsew"
-        )
-
-        # Marco para las opciones del ecualizzador
-        self.frm_equalizer_options = ttk.Frame(
-            self.root, padding=10, relief="groove", borderwidth=2
-        )
-        self.frm_equalizer_options.grid(
-            padx=10, pady=10, row=1, column=0, sticky="nsew"
-        )
-
-        # >>>>> Selección de ruido <<<<<
+    def create_radio_buttons_noise_type(self):
         ttk.Label(self.frm_options, text="Seleccione el tipo de ruido:").grid(
             row=0, sticky="w"
         )
@@ -691,7 +664,7 @@ class App:
         )  # Crear botón para ruido blanco
         self.radio_btn_white.grid(row=2, sticky="w")
 
-        # >>>>> Selección de tipo de filtro <<<<<
+    def create_radio_buttons_band_type(self):
         ttk.Label(
             self.frm_options,
             text="\nSeleccione el tipo de banda de frecuencia:",
@@ -715,7 +688,7 @@ class App:
         )  # Crear botón para tercios de octavas
         self.radio_btn_third_octave.grid(row=5, sticky="w")
 
-        # >>>>> Selección de tipo de filtro <<<<<
+    def create_radio_buttons_filter_type(self):
         ttk.Label(
             self.frm_options, text="\nSeleccione el tipo de filtro:"
         ).grid(row=6, sticky="w")
@@ -770,7 +743,7 @@ class App:
         )
         self.radio_btn_allpass.grid(row=11, sticky="w")
 
-        # >>>>> Selección de las bandas <<<<<
+    def create_combobox_bands_selector(self):
         ttk.Label(
             self.frm_options, text="\nSeleccione las bandas a filtrar:"
         ).grid(row=12, sticky="w")
@@ -796,12 +769,58 @@ class App:
         self.combo_high_freq.config(state="disabled")
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
-        # >>>>> Selección del tiempo de ruido <<<<<
+    def create_entry_noise_time(self):
+        self.create_entry_noise_time()
         ttk.Label(
             self.frm_options, text="\nIntroduzca los segundos a reproducir:"
         ).grid(row=15, sticky="w")
         self.time_entry = ttk.Entry(self.frm_options)
         self.time_entry.grid(row=16)
+
+    def create_widgets(self):
+        """Crea los widgets de la interfaz"""
+        # Marco para agrupar los widgets
+        self.frm_options = ttk.Frame(
+            self.root, padding=10, relief="groove", borderwidth=2
+        )
+        self.frm_options.grid(padx=10, pady=10, row=0, column=0, sticky="nsew")
+
+        # Marco para el gráfico
+        self.frm_graphic = ttk.Frame(
+            self.root, padding=10, relief="groove", borderwidth=2
+        )
+        self.frm_graphic.grid(padx=10, pady=10, row=0, column=1, sticky="nsew")
+
+        # Marco para el ecualizador
+        self.frm_equalizer = ttk.Frame(
+            self.root, padding=10, relief="groove", borderwidth=2
+        )
+        self.frm_equalizer.grid(
+            padx=10, pady=10, row=1, column=1, sticky="nsew"
+        )
+
+        # Marco para las opciones del ecualizzador
+        self.frm_equalizer_options = ttk.Frame(
+            self.root, padding=10, relief="groove", borderwidth=2
+        )
+        self.frm_equalizer_options.grid(
+            padx=10, pady=10, row=1, column=0, sticky="nsew"
+        )
+
+        # >>>>> Selección de ruido <<<<<
+        self.create_radio_buttons_noise_type()
+
+        # >>>>> Selección de tipo de filtro <<<<<
+        self.create_radio_buttons_band_type()
+
+        # >>>>> Selección de tipo de filtro <<<<<
+        self.create_radio_buttons_filter_type()
+
+        # >>>>> Selección de las bandas <<<<<
+        self.create_combobox_bands_selector()
+
+        # >>>>> Selección del tiempo de ruido <<<<<
+        self.create_entry_noise_time()
 
         ttk.Label(self.frm_options, text="\n").grid(
             row=17
