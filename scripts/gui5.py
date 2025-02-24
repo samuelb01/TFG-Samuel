@@ -148,9 +148,7 @@ class App:
             self.filtered_noise, self.band_levels = equalize_signal(self.filtered_noise, SAMPLE_RATE, self.fl_selected_bands, self.fh_selected_bands, band_gains)
 
             self.create_plot()
-            self.create_equalizer_gui()
-            self.create_equalizer_gui_buttons()
-        
+            self.reset_scales()
     
     def start_noise_thread(self):
         """Inicia el hilo para reproducir el ruido"""
