@@ -23,6 +23,7 @@ from config import (
 from filters4 import (
     thirdOctaveFilter,
     octaveFilter,
+    equalize_signal
 )  
 
 # Importar funciones para crear ruidos
@@ -137,6 +138,19 @@ class App:
                 self.create_plot()
                 self.create_equalizer_gui()
                 self.create_equalizer_gui_buttons()
+
+    def apply_equalization(self):
+        """Aplicar ecualización a la señal"""
+        # Obtener los valores actuales de los sliders
+        band_gains = [scale.get() for scale in self.equalizer_scales]
+
+        if any(gain != 0 for gain in band_gains):
+            self.filtered_noise, self.band_levels = equalize_signal(self.filtered_noise, SAMPLE_RATE, self.fl_selected_bands, self.fh_selected_bands, band_gains)
+
+            self.create_plot()
+            self.create_equalizer_gui()
+            self.create_equalizer_gui_buttons()
+        
     
     def start_noise_thread(self):
         """Inicia el hilo para reproducir el ruido"""
@@ -641,6 +655,13 @@ class App:
             command=self.reset_scales,
         )
         btn_reset_scales.grid(row=0, column=0)
+
+        btn_apply_equalization = ttk.Button(
+            self.frm_equalizer_options,
+            text="APLICAR ECUALIZACIÓN",
+            command=self.apply_equalization,
+        )
+        btn_apply_equalization.grid(row=0, column=1)
 
     def create_radio_buttons_noise_type(self):
         ttk.Label(self.frm_options, text="Seleccione el tipo de ruido:").grid(

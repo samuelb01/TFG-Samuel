@@ -188,7 +188,7 @@ def calcButterFilter(fs, signal_data, fl_selected_bands, fh_selected_bands):
 
         filtered_signal = sosfilt(
             sos, signal_data
-        )  # Se filtra la señal de audio cono el filtro creado
+        )  # Se filtra la señal de audio con el filtro creado
         filtered_signals[i, :] = filtered_signal
 
         rms = np.sqrt(np.mean(filtered_signal**2))  # Valor de amplitud RMS
@@ -296,4 +296,46 @@ def octaveFilter(
         fl_selected_bands,
         fm_selected_bands,
         fh_selected_bands,
+    )
+
+def calcButterFilterEqualization(fs, signal_data, fl_selected_bands, fh_selected_bands, band_gains):
+    band_levels = []  # Array con las bandas filtradas
+    filtered_signals = np.zeros(
+        (len(fl_selected_bands), len(signal_data))
+    )  # Array con las señales filtradas
+
+    # Aplicación de los filtros a la señal de audio
+    for i, (f_low, f_High) in enumerate(
+        zip(fl_selected_bands, fh_selected_bands)
+    ):
+        sos = butter(
+            FILTER_ORDER, [f_low, f_High], "bandpass", False, "sos", fs
+        )  # Second Order Sections
+
+        filtered_signal = sosfilt(
+            sos, signal_data
+        )  # Se filtra la señal de audio con el filtro creado
+        
+        filtered_signals[i, :] = filtered_signal * 10**(band_gains[i] / 20)
+        print(band_gains)
+
+        rms = np.sqrt(np.mean(filtered_signals[i]**2))  # Valor de amplitud RMS
+        level = 20 * np.log10(rms)  # Nivel de cada banda
+
+        band_levels.append(
+            level
+        )  # Niveles por bandas para representar y operar
+
+    return filtered_signals, band_levels
+
+def equalize_signal(signal, fs, fl_selected_bands, fh_selected_bands, band_gains):
+    filtered_signals, band_levels = calcButterFilterEqualization(
+        fs, signal, fl_selected_bands, fh_selected_bands, band_gains
+    )
+
+    combined_signal = np.sum(filtered_signals, axis=0)
+
+    return(
+        combined_signal,
+        band_levels
     )

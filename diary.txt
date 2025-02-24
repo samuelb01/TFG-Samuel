@@ -160,3 +160,7 @@ DIARIO DEL TFG
 22/02/2025
     - He reducido el tamaño de lagunas funciones creando funciones más pequeñas para poder entender mejor el código y encontrar más fácilmente las cosas.
     - He instalado pyinstall para crear un archivo ejecutable de mi programa. main.exe
+
+24/02/2025
+    - Consigo aplicar las ganacias a la señal, pero no me gusta cómo he hecho las funciones.
+    - Tampoco sé si una vez se ecualice se pude volver a ecualizar
