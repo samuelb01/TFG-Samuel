@@ -1,6 +1,6 @@
 # Autor: Samuel Bellón Elipe
 # Constantes para los filtros
-NOMINAL_THIRDOCTAVE_FREC = [
+NOMINAL_THIRDOCTAVE_FREQ = [
     25,
     31.5,
     40,
@@ -32,7 +32,7 @@ NOMINAL_THIRDOCTAVE_FREC = [
     16000,
     20000,
 ]
-NOMINAL_OCTAVE_FREC = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
+NOMINAL_OCTAVE_FREQ = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 G = 10 ** (3 / 10)  # Octave frecuency ratio
 FR = 1000  # Reference frequency
 FILTER_ORDER = 16  # Orden del filtro

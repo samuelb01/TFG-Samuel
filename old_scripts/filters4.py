@@ -301,34 +301,32 @@ def octaveFilter(
         fh_selected_bands,
     )
 
-def calcButterFilterEqualization(fs, signal_data, fl_selected_bands, fh_selected_bands, band_gains):
+def calcButterFilterEqualization(fs, signal_data, fl_selected_bands, fh_selected_bands, band_gains, threshold_db=-3):
     band_levels = []  # Array con las bandas filtradas
     filtered_signals = np.zeros(
         (len(fl_selected_bands), len(signal_data))
     )  # Array con las señales filtradas
 
+    # Convertir el umbral de dB a una escala lineal
+    threshold_linear = 10 ** (threshold_db / 20)
+
     # Aplicación de los filtros a la señal de audio
     for i, (f_low, f_High, gain) in enumerate(
         zip(fl_selected_bands, fh_selected_bands, band_gains)
     ):
-        print(gain)
+        sos = butter(
+            FILTER_ORDER, [f_low, f_High], "bandpass", False, "sos", fs
+        )  # Second Order Sections
 
-        if gain != 0:
+        filtered_signal = sosfilt(
+            sos, signal_data
+        )  # Se filtra la señal de audio con el filtro creado
 
-            sos = butter(
-                FILTER_ORDER, [f_low, f_High], "bandpass", False, "sos", fs
-            )  # Second Order Sections
+        # Aplicar el umbral
+        filtered_signal[np.abs(filtered_signal) < threshold_linear] = 0
 
-            filtered_signal = sosfilt(
-                sos, signal_data
-            )  # Se filtra la señal de audio con el filtro creado
-        
-            filtered_signals[i, :] = filtered_signal * 10**(gain / 20)
-
-        else:
-            filtered_signals[i, :] = signal_data[i]
-            print(signal_data[i])
-            print(filtered_signals[i])
+        # Aplicar la ganancia
+        filtered_signals[i, :] = filtered_signal * 10**(gain / 20)
 
         rms = np.sqrt(np.mean(filtered_signals[i]**2))  # Valor de amplitud RMS
         level = 20 * np.log10(rms)  # Nivel de cada banda
@@ -336,6 +334,10 @@ def calcButterFilterEqualization(fs, signal_data, fl_selected_bands, fh_selected
         band_levels.append(
             level
         )  # Niveles por bandas para representar y operar
+
+    # Imprimir las posiciones de filtered_signals[0] donde los valores son distintos de 0
+    non_zero_indices = np.nonzero(filtered_signals[5])[0]
+    print("Posiciones de filtered_signals[0] con valores distintos de 0:", non_zero_indices)
 
     return filtered_signals, band_levels
 

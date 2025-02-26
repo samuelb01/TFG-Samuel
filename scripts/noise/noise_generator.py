@@ -1,9 +1,10 @@
 import numpy as np
+from config import SAMPLE_RATE
 
 class NoiseGenerator:
 
     @staticmethod
-    def generate_white_noise(duration, sample_rate):
+    def generate_white_noise(duration, sample_rate=SAMPLE_RATE):
         """
         Genera ruido blanco.
         
@@ -26,7 +27,7 @@ class NoiseGenerator:
         return white_noise.astype(np.int16)
 
     @staticmethod
-    def generate_pink_noise(duration, sample_rate):
+    def generate_pink_noise(duration, sample_rate=SAMPLE_RATE):
         """
         Genera ruido rosa.
         

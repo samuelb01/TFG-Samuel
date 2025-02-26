@@ -164,3 +164,10 @@ DIARIO DEL TFG
 24/02/2025
     - Consigo aplicar las ganacias a la señal, pero no me gusta cómo he hecho las funciones.
     - Tampoco sé si una vez se ecualice se pude volver a ecualizar
+
+26/02/2025
+    - He decidio reestructurar el código para integrarlo emjor con diferentes clases.
+    - Ya tengo el esqueleto del nuevo proyecto.
+    - El rchivo fitler.py contiene la clase Filter que se encarga de realizar todo lo realicionado con los filtros, así como representar las gráficas.
+    - El archivo noise_generator.py tiene la clase NoiseGenerator que se encarga de generar el ruido blanco o rosa.
+    - La función para verificar los límties de aceptación para filtros de tercios de octava mno funciona bien, muestra la misma frecuencia tood el rato para cada filtro.

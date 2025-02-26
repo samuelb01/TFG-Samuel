@@ -2,4 +2,4 @@ from gui.gui import GUI
 
 if __name__ == '__main__':
     app = GUI()
-    app.filter()
+    app.apply_filter()
