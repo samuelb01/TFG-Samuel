@@ -134,7 +134,7 @@ class App:
                     ) = thirdOctaveFilter(
                         noise_data, SAMPLE_RATE, bandas_a_filtrar
                     )
-
+            
                 self.create_plot()
                 self.create_equalizer_gui()
                 self.create_equalizer_gui_buttons()

@@ -286,8 +286,11 @@ def octaveFilter(
     filtered_signals, band_levels = calcButterFilter(
         fs, signal_data, fl_selected_bands, fh_selected_bands
     )
-
+    
     combined_signal = np.sum(filtered_signals, axis=0)
+
+    # print(filtered_signals[7])
+    # print(len(combined_signal))
 
     return (
         combined_signal,
@@ -305,19 +308,27 @@ def calcButterFilterEqualization(fs, signal_data, fl_selected_bands, fh_selected
     )  # Array con las señales filtradas
 
     # Aplicación de los filtros a la señal de audio
-    for i, (f_low, f_High) in enumerate(
-        zip(fl_selected_bands, fh_selected_bands)
+    for i, (f_low, f_High, gain) in enumerate(
+        zip(fl_selected_bands, fh_selected_bands, band_gains)
     ):
-        sos = butter(
-            FILTER_ORDER, [f_low, f_High], "bandpass", False, "sos", fs
-        )  # Second Order Sections
+        print(gain)
 
-        filtered_signal = sosfilt(
-            sos, signal_data
-        )  # Se filtra la señal de audio con el filtro creado
+        if gain != 0:
+
+            sos = butter(
+                FILTER_ORDER, [f_low, f_High], "bandpass", False, "sos", fs
+            )  # Second Order Sections
+
+            filtered_signal = sosfilt(
+                sos, signal_data
+            )  # Se filtra la señal de audio con el filtro creado
         
-        filtered_signals[i, :] = filtered_signal * 10**(band_gains[i] / 20)
-        print(band_gains)
+            filtered_signals[i, :] = filtered_signal * 10**(gain / 20)
+
+        else:
+            filtered_signals[i, :] = signal_data[i]
+            print(signal_data[i])
+            print(filtered_signals[i])
 
         rms = np.sqrt(np.mean(filtered_signals[i]**2))  # Valor de amplitud RMS
         level = 20 * np.log10(rms)  # Nivel de cada banda
@@ -329,6 +340,19 @@ def calcButterFilterEqualization(fs, signal_data, fl_selected_bands, fh_selected
     return filtered_signals, band_levels
 
 def equalize_signal(signal, fs, fl_selected_bands, fh_selected_bands, band_gains):
+
+    fl_equalization_bands = []
+    fh_equalization_bands = []
+    gains_to_apply = []
+
+    # for gain, (f_low, f_high) in zip(band_gains, zip(fl_selected_bands, fh_selected_bands)):
+    #     print(f"Band: {f_low} - {f_high} Hz -> Gain: {gain} dB")
+
+    #     if gain != 0:
+    #         fl_equalization_bands.append(f_low)
+    #         fh_equalization_bands.append(f_high)
+    #         gains_to_apply.append(gain)
+    
     filtered_signals, band_levels = calcButterFilterEqualization(
         fs, signal, fl_selected_bands, fh_selected_bands, band_gains
     )
