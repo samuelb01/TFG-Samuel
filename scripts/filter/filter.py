@@ -320,7 +320,7 @@ class Filter:
             print(f"\n\n{red_cross} Al menos un filtro no cumple con la norma ISO 61260-1")
 
     @staticmethod
-    def create_acceptance_limits_dicc(acceptance_limits, b=3):
+    def create_acceptance_limits_dicc(acceptance_limits, b):
         """ Crea un diccionario con los límites de aceptación de la norma ISO 61260-1 para el tipo de banda de octava seleccionado """
         if b != 1:
             new_dicc = {}
