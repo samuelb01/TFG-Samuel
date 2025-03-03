@@ -226,7 +226,7 @@ class Filter:
         ax.grid(True, which="both", linestyle="--", linewidth=0.5)
         figure.tight_layout()
 
-        return figure, ax
+        return figure, ax, bars
 
     def plot_filter_response(self):
         """ Muestra la respuesta en frecuencia de los filtros"""

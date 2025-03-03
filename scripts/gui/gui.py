@@ -286,7 +286,9 @@ class GUI:
     def create_graph(self, master, scatter=False):
         """ Crear el gráfico de la pestaña principal """
         # Crear un lienzo de Tkinter para la figura de Matplotlib
-        figure, ax = self.filter.plot_filtered_signal_levels()
+        figure, ax, bars = self.filter.plot_filtered_signal_levels()
+
+        annotation = self.create_annotation_to_show_levels(ax)
 
         self.plot_canvas = FigureCanvasTkAgg(figure, master=master)
         
@@ -297,6 +299,55 @@ class GUI:
 
         if scatter == True:
             self.create_scatter_points(ax)
+
+        # Conectar el evento de movimiento del ratón a la función
+        self.plot_canvas.mpl_connect("motion_notify_event", lambda event: self.on_hover(event, ax=ax, bars=bars, annotation=annotation))
+
+    @staticmethod
+    def create_annotation_to_show_levels(ax):
+        """ Crear el "annotation" para mostrar el nivel en dB """
+        annotation = ax.annotate(
+            "",  # Texto inicial vacío
+            xy=(0, 0),  # Posición inicial
+            xytext=(0, 5),  # Desplazamiento del texto respecto al punto (xy)
+            textcoords="offset points",  # La posición de xytext es relativa a xy
+            bbox=dict(
+                boxstyle="round,pad=0.3", fc="yellow", alpha=0.8
+            ),  # Cuadro de fondo
+            fontsize=10,  # Tamaño del texto
+            color="black",  # Color del texto
+            ha="center",  # Alinear horizontalmente el texto en el centro
+            visible=False,  # Ocultar al inicio
+        )
+        return annotation
+
+    def on_hover(self, event, ax, bars, annotation):
+        """Función para mostrar el valor al pasar el cursor"""
+        if (
+            event.inaxes == ax
+        ):  # Verifica si el cursor está dentro del área de la gráfica
+            for bar, level, freq in zip(
+                bars, self.filter.filtered_bands_levels , self.filter.fm_selected_bands
+            ):
+                contains, _ = bar.contains(
+                    event
+                )  # Verifica si el cursor está sobre una barra
+                if contains:
+                    # Posicionar la anotación encima de la barra
+                    annotation.set_text(
+                        f"{level:.1f} dB"
+                    )  # Muestra el nivel en dB
+                    annotation.xy = (
+                        freq,
+                        level + 1,
+                    )  # Lo coloca sobre la barra
+                    annotation.set_visible(True)  # Lo hace visible
+                    self.plot_canvas.draw_idle()  # Redibuja solo si hay cambios
+                    return
+        self.annotation.set_visible(
+            False
+        )  # Oculta la anotación si no está sobre una barra
+        self.plot_canvas.draw_idle()
 
     def create_scatter_points(self, ax):
         """ Crear puntos en la misma posición que las barras, cambiarán con la ecualización """
