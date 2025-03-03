@@ -226,13 +226,7 @@ class Filter:
         ax.grid(True, which="both", linestyle="--", linewidth=0.5)
         figure.tight_layout()
 
-
-        plt.show()
-
-        # Crear puntos en la misma posición que las barras, cambiarán con la ecualización
-        scatter_points = ax.scatter(
-            self.fm_selected_bands, self.filtered_bands_levels, color="red", zorder=3
-        )
+        return figure, ax
 
     def plot_filter_response(self):
         """ Muestra la respuesta en frecuencia de los filtros"""

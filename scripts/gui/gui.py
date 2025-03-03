@@ -4,6 +4,9 @@ from audio_player.audio_player import AudioPlayer
 
 import tkinter as tk
 from tkinter import ttk, messagebox
+from tkinter import TclError
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from config import NOMINAL_OCTAVE_FREQ, NOMINAL_THIRDOCTAVE_FREQ, DURATION
 
@@ -29,7 +32,7 @@ class GUI:
         self.filter_type = tk.StringVar()
 
         self.create_main_tab()
-        self.create_equalizer_tab()
+        # self.create_equalizer_tab()
 
         # # 85% del ancho de la pantalla para el gráfico y el 15% para el menú de opciones
         # self.tab_main.grid_columnconfigure(1, weight=85)
@@ -40,7 +43,7 @@ class GUI:
 
     def create_main_tab(self):
         """ Crear la pestaña principal de la interfaz """
-        self.tab_main = tk.Frame(self.main_window)
+        self.tab_main = ttk.Frame(self.main_window)
         self.main_window.add(self.tab_main, text="Main")
 
         self.create_frame_options()
@@ -48,23 +51,23 @@ class GUI:
 
     def create_equalizer_tab(self):
         """ Crear la pestaña del ecualizador de la interfaz """
-        self.tab_equalizer = tk.Frame(self.main_window)
+        self.tab_equalizer = ttk.Frame(self.main_window)
         self.main_window.add(self.tab_equalizer, text="Equalizer")
 
-        self.frm_equalizer_graph = tk.Frame(self.tab_equalizer, relief="groove", bd=2)
-        self.frm_equalizer_graph.grid(row=0, column=0, sticky="nsew")
+        # >>>>> Crear el frame del ecualizador <<<<<
+        self.create_frame_equalizer()
 
-        self.frm_equalizer_scales = tk.Frame(self.tab_equalizer, relief="groove", bd=2)
-        self.frm_equalizer_scales.grid(row=1, column=0, sticky="nsew")
+        # >>>>> Crear los sliders del ecualizador <<<<<
+        self.create_scales_equalizer()
 
     def create_frame_options(self):
         """ Crear el frame de opciones de la pestaña principal """
-        self.frm_options = tk.Frame(self.tab_main, relief="groove", bd=2)
+        self.frm_options = ttk.Frame(self.tab_main, padding=10, relief="groove", borderwidth=2)
         self.frm_options.grid(row=0, column=0, sticky="nsew")
         self.frm_options.grid_propagate(False)
 
         self.frm_options.update_idletasks()
-        self.frm_options.config(width=self.computer_screen_width * 0.15, height=self.computer_screen_height * 0.85)
+        self.frm_options.config(width=self.computer_screen_width * 0.25, height=self.computer_screen_height * 0.75)
 
         # >>>>> Selección de ruido <<<<<
         self.create_radio_buttons_noise_type()
@@ -82,7 +85,7 @@ class GUI:
         self.create_entry_noise_time()
 
         # Espacio en blanco antes de los botones
-        ttk.Label(self.frm_options, text="\n").grid(
+        ttk.Label(self.frm_options, text="").grid(
             row=17
         )
 
@@ -94,16 +97,18 @@ class GUI:
 
     def create_frame_graph(self):
         """ Crear el frame del gráfico de la pestaña principal """
-        self.frm_graph = tk.Frame(self.tab_main, relief="groove", bd=2)
+        self.frm_graph = ttk.Frame(self.tab_main, padding=10, relief="groove", borderwidth=2)
         self.frm_graph.grid(row=0, column=1, sticky="nsew")
         self.frm_graph.grid_propagate(False)
 
         self.frm_graph.update_idletasks()
         self.frm_graph.config(width=self.computer_screen_width * 0.85, height=self.computer_screen_height * 0.85)
 
+        # self.create_graph()
+
     def create_radio_buttons_noise_type(self):
         """ Crear los radio buttons para seleccionar el tipo de ruido """
-        ttk.Label(self.frm_options, text="Seleccione el tipo de ruido:").grid(
+        ttk.Label(self.frm_options, text="\nSeleccione el tipo de ruido:").grid(
             row=0, sticky="w"
         )
 
@@ -129,7 +134,7 @@ class GUI:
 
     def create_radio_buttons_band_type(self):
         """ Crear los radio buttons para seleccionar el tipo de banda """
-        ttk.Label(self.frm_options, text="Seleccione el tipo de banda:").grid(
+        ttk.Label(self.frm_options, text="\nSeleccione el tipo de banda:").grid(
             row=3, sticky="w"
         )
 
@@ -209,7 +214,7 @@ class GUI:
 
     def create_combobox_bands_selector(self):
         """ Crear los combobox para seleccionar las bandas """
-        ttk.Label(self.frm_options, text="Seleccione las bandas:").grid(row=12, sticky="w")
+        ttk.Label(self.frm_options, text="").grid(row=12, sticky="w")
         ttk.Label(self.frm_options, text="Banda de corte inferior:").grid(row=13, column=0, sticky="w")
         ttk.Label(self.frm_options, text="Banda de corte superior:").grid(row=13, column=1, sticky="w")
 
@@ -222,9 +227,10 @@ class GUI:
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
     def create_entry_noise_time(self):
-        ttk.Label(self.frm_options, text="Duración del ruido (segundos):").grid(row=15, sticky="w")
+        """ Crear la entrada para introducir el tiempo de ruido """
+        ttk.Label(self.frm_options, text="\nDuración del ruido (segundos):").grid(row=15, columnspan=2)
         self.time_entry = ttk.Entry(self.frm_options)
-        self.time_entry.grid(row=16, sticky="w")
+        self.time_entry.grid(row=16, columnspan=2)
 
     def create_button_apply_filter(self):
         self.btn_apply_filter = ttk.Button(
@@ -233,6 +239,8 @@ class GUI:
             command=lambda: [
                 self.check_selected_time_type(),
                 self.apply_filter(),
+                self.create_graph(self.frm_graph),
+                self.create_equalizer_tab(),
                 self.check_conditions(),
                 self.btn_play_noise.config(state="!disabled"),
             ],
@@ -264,6 +272,38 @@ class GUI:
             state="disabled",
         )
         self.btn_stop.grid(row=20, columnspan=2)
+
+    def create_frame_equalizer(self):
+        self.frm_equalizer_graph = ttk.Frame(self.tab_equalizer, relief="groove", borderwidth=2)
+        self.frm_equalizer_graph.grid(row=0, column=0, sticky="nsew")
+
+        self.create_graph(self.frm_equalizer_graph, scatter=True)
+
+    def create_scales_equalizer(self):
+        self.frm_equalizer_scales = ttk.Frame(self.tab_equalizer, relief="groove", borderwidth=2)
+        self.frm_equalizer_scales.grid(row=1, column=0, sticky="nsew")
+
+    def create_graph(self, master, scatter=False):
+        """ Crear el gráfico de la pestaña principal """
+        # Crear un lienzo de Tkinter para la figura de Matplotlib
+        figure, ax = self.filter.plot_filtered_signal_levels()
+
+        self.plot_canvas = FigureCanvasTkAgg(figure, master=master)
+        
+        self.plot_canvas.draw()
+        self.plot_canvas.get_tk_widget().grid(
+            row=0, column=0, padx=10, pady=10
+        )  # Mostrar el lienzo en la ventana
+
+        if scatter == True:
+            self.create_scatter_points(ax)
+
+    def create_scatter_points(self, ax):
+        """ Crear puntos en la misma posición que las barras, cambiarán con la ecualización """
+        self.scatter_points = ax.scatter(
+            self.filter.fm_selected_bands, self.filter.filtered_bands_levels, color="red", zorder=3
+        )
+
 
     def on_band_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de banda"""
@@ -422,6 +462,14 @@ class GUI:
     
     def apply_filter(self):
         """ Aplicar el filtro seleccionado al tipo de ruido seleccionado """
+        try:
+            # Verificar si la ventana principal está activa antes de continuar
+            if not self.root.winfo_exists():
+                return
+        except TclError:
+            # La ventana principal ha sido destruida
+            return
+
         self.filter.signal = self.noise_generator.generate_pink_noise(duration=60)
         self.filter.octave_filter()
         
@@ -440,11 +488,13 @@ class GUI:
                 float(self.combo_high_freq.get()),
             ]
         except:
-            # Muestra ventana de error si no hay ruido y/o filtro seleccionado
-            messagebox.showerror(
-                "Advertencia",
-                "No se ha podido realizar el filtrado de la señal de referencia, revise el tipo de filtro, de ruido, bandas a filtrar y duración",
-            )
+            # Verificar si la ventana principal está activa antes de mostrar el mensaje de error
+            if self.root.winfo_exists():
+                # Muestra ventana de error si no hay ruido y/o filtro seleccionado
+                messagebox.showerror(
+                    "Advertencia",
+                    "No se ha podido realizar el filtrado de la señal de referencia, revise el tipo de filtro, de ruido, bandas a filtrar y duración",
+                )
         else:
             # Decidir tipo de filtro y de ruido para filtrar
             if selected_noise == "WHITE NOISE":  # RUIDO BLANCO
@@ -472,8 +522,7 @@ class GUI:
                     self.fm_selected_bands,
                     self.fh_selected_bands,
                 ) = self.filter.third_octave_filter(bandas_a_filtrar)
-        
-            print(type(self.filtered_noise))
+    
             # self.filter.plot_filtered_signal_levels()
             # self.create_equalizer_gui()
             # self.create_equalizer_gui_buttons()
