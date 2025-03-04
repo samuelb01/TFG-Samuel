@@ -1,6 +1,7 @@
 from noise_generator.noise_generator import NoiseGenerator
 from filter.filter import Filter
 from audio_player.audio_player import AudioPlayer
+from filter_plotter.filter_plotter import FilterPlotter
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -13,10 +14,13 @@ from config import NOMINAL_OCTAVE_FREQ, NOMINAL_THIRDOCTAVE_FREQ, DURATION
 
 class GUI:
     def __init__(self):
-        """ Constructor de la clase GUI """
+        """Constructor de la clase GUI"""
         self.noise_generator = NoiseGenerator()
         self.filter = Filter()
         self.audio_player = AudioPlayer()
+
+        self.main_graph = None
+        self.equalizer_graph = None
 
         self.root = tk.Tk()
         self.root.title("PROYECTO SAMUEL")
@@ -42,7 +46,7 @@ class GUI:
         self.root.mainloop()
 
     def create_main_tab(self):
-        """ Crear la pestaña principal de la interfaz """
+        """Crear la pestaña principal de la interfaz"""
         self.tab_main = ttk.Frame(self.main_window)
         self.main_window.add(self.tab_main, text="Main")
 
@@ -50,24 +54,32 @@ class GUI:
         self.create_frame_graph()
 
     def create_equalizer_tab(self):
-        """ Crear la pestaña del ecualizador de la interfaz """
+        """Crear la pestaña del ecualizador de la interfaz"""
         self.tab_equalizer = ttk.Frame(self.main_window)
         self.main_window.add(self.tab_equalizer, text="Equalizer")
 
         # >>>>> Crear el frame del ecualizador <<<<<
         self.create_frame_equalizer()
 
+        # >>>>> Crear la gráfica con los niveles para el ecualizador <<<<<
+        self.create_equalizer_graph()
+
         # >>>>> Crear los sliders del ecualizador <<<<<
         self.create_scales_equalizer()
 
     def create_frame_options(self):
-        """ Crear el frame de opciones de la pestaña principal """
-        self.frm_options = ttk.Frame(self.tab_main, padding=10, relief="groove", borderwidth=2)
+        """Crear el frame de opciones de la pestaña principal"""
+        self.frm_options = ttk.Frame(
+            self.tab_main, padding=10, relief="groove", borderwidth=2
+        )
         self.frm_options.grid(row=0, column=0, sticky="nsew")
         self.frm_options.grid_propagate(False)
 
         self.frm_options.update_idletasks()
-        self.frm_options.config(width=self.computer_screen_width * 0.25, height=self.computer_screen_height * 0.75)
+        self.frm_options.config(
+            width=self.computer_screen_width * 0.25,
+            height=self.computer_screen_height * 0.75,
+        )
 
         # >>>>> Selección de ruido <<<<<
         self.create_radio_buttons_noise_type()
@@ -85,9 +97,7 @@ class GUI:
         self.create_entry_noise_time()
 
         # Espacio en blanco antes de los botones
-        ttk.Label(self.frm_options, text="").grid(
-            row=17
-        )
+        ttk.Label(self.frm_options, text="").grid(row=17)
 
         # >>>>> Realizar el filtro <<<<<
         self.create_button_apply_filter()
@@ -96,18 +106,25 @@ class GUI:
         self.create_button_play_stop_noise()
 
     def create_frame_graph(self):
-        """ Crear el frame del gráfico de la pestaña principal """
-        self.frm_graph = ttk.Frame(self.tab_main, padding=10, relief="groove", borderwidth=2)
+        """Crear el frame del gráfico de la pestaña principal"""
+        self.frm_graph = ttk.Frame(
+            self.tab_main, padding=10, relief="groove", borderwidth=2
+        )
         self.frm_graph.grid(row=0, column=1, sticky="nsew")
         self.frm_graph.grid_propagate(False)
 
         self.frm_graph.update_idletasks()
-        self.frm_graph.config(width=self.computer_screen_width * 0.85, height=self.computer_screen_height * 0.85)
+        self.frm_graph.config(
+            width=self.computer_screen_width * 0.85,
+            height=self.computer_screen_height * 0.85,
+        )
+
+        # self.create_main_graph(self.frm_graph)
 
         # self.create_graph()
 
     def create_radio_buttons_noise_type(self):
-        """ Crear los radio buttons para seleccionar el tipo de ruido """
+        """Crear los radio buttons para seleccionar el tipo de ruido"""
         ttk.Label(self.frm_options, text="\nSeleccione el tipo de ruido:").grid(
             row=0, sticky="w"
         )
@@ -133,7 +150,7 @@ class GUI:
         self.radio_btn_white.grid(row=2, sticky="w")
 
     def create_radio_buttons_band_type(self):
-        """ Crear los radio buttons para seleccionar el tipo de banda """
+        """Crear los radio buttons para seleccionar el tipo de banda"""
         ttk.Label(self.frm_options, text="\nSeleccione el tipo de banda:").grid(
             row=3, sticky="w"
         )
@@ -157,7 +174,7 @@ class GUI:
         self.radio_btn_third_octave.grid(row=5, sticky="w")
 
     def create_radio_buttons_filter_type(self):
-        """ Crear los radio buttons para seleccionar el tipo de filtro """
+        """Crear los radio buttons para seleccionar el tipo de filtro"""
         ttk.Label(
             self.frm_options, text="\nSeleccione el tipo de filtro:"
         ).grid(row=6, sticky="w")
@@ -213,22 +230,32 @@ class GUI:
         self.radio_btn_allpass.grid(row=11, sticky="w")
 
     def create_combobox_bands_selector(self):
-        """ Crear los combobox para seleccionar las bandas """
+        """Crear los combobox para seleccionar las bandas"""
         ttk.Label(self.frm_options, text="").grid(row=12, sticky="w")
-        ttk.Label(self.frm_options, text="Banda de corte inferior:").grid(row=13, column=0, sticky="w")
-        ttk.Label(self.frm_options, text="Banda de corte superior:").grid(row=13, column=1, sticky="w")
+        ttk.Label(self.frm_options, text="Banda de corte inferior:").grid(
+            row=13, column=0, sticky="w"
+        )
+        ttk.Label(self.frm_options, text="Banda de corte superior:").grid(
+            row=13, column=1, sticky="w"
+        )
 
-        self.combo_low_freq = ttk.Combobox(self.frm_options, state="disabled", postcommand=self.update_bands)
+        self.combo_low_freq = ttk.Combobox(
+            self.frm_options, state="disabled", postcommand=self.update_bands
+        )
         self.combo_low_freq.grid(row=14, column=0, sticky="w")
         self.combo_low_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
-        self.combo_high_freq = ttk.Combobox(self.frm_options, state="disabled", postcommand=self.update_bands)
+        self.combo_high_freq = ttk.Combobox(
+            self.frm_options, state="disabled", postcommand=self.update_bands
+        )
         self.combo_high_freq.grid(row=14, column=1, sticky="w")
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
     def create_entry_noise_time(self):
-        """ Crear la entrada para introducir el tiempo de ruido """
-        ttk.Label(self.frm_options, text="\nDuración del ruido (segundos):").grid(row=15, columnspan=2)
+        """Crear la entrada para introducir el tiempo de ruido"""
+        ttk.Label(
+            self.frm_options, text="\nDuración del ruido (segundos):"
+        ).grid(row=15, columnspan=2)
         self.time_entry = ttk.Entry(self.frm_options)
         self.time_entry.grid(row=16, columnspan=2)
 
@@ -239,7 +266,7 @@ class GUI:
             command=lambda: [
                 self.check_selected_time_type(),
                 self.apply_filter(),
-                self.create_graph(self.frm_graph),
+                self.create_main_graph(),
                 self.create_equalizer_tab(),
                 self.check_conditions(),
                 self.btn_play_noise.config(state="!disabled"),
@@ -274,87 +301,57 @@ class GUI:
         self.btn_stop.grid(row=20, columnspan=2)
 
     def create_frame_equalizer(self):
-        self.frm_equalizer_graph = ttk.Frame(self.tab_equalizer, relief="groove", borderwidth=2)
+        self.frm_equalizer_graph = ttk.Frame(
+            self.tab_equalizer, relief="groove", borderwidth=2
+        )
         self.frm_equalizer_graph.grid(row=0, column=0, sticky="nsew")
 
-        self.create_graph(self.frm_equalizer_graph, scatter=True)
-
     def create_scales_equalizer(self):
-        self.frm_equalizer_scales = ttk.Frame(self.tab_equalizer, relief="groove", borderwidth=2)
+        self.frm_equalizer_scales = ttk.Frame(
+            self.tab_equalizer, relief="groove", borderwidth=2
+        )
         self.frm_equalizer_scales.grid(row=1, column=0, sticky="nsew")
 
-    def create_graph(self, master, scatter=False):
-        """ Crear el gráfico de la pestaña principal """
-        # Crear un lienzo de Tkinter para la figura de Matplotlib
-        figure, ax, bars = self.filter.plot_filtered_signal_levels()
+    def create_main_graph(self):
+        self.main_graph = FilterPlotter(self.filter)
+        self.main_graph.plot_filtered_signal_levels()
+        self.main_graph.create_annotation_to_show_levels()
 
-        annotation = self.create_annotation_to_show_levels(ax)
+        self.plot_canvas_main_graph = FigureCanvasTkAgg(
+            self.main_graph.figure, self.frm_graph
+        )
 
-        self.plot_canvas = FigureCanvasTkAgg(figure, master=master)
-        
-        self.plot_canvas.draw()
-        self.plot_canvas.get_tk_widget().grid(
+        self.plot_canvas_main_graph.draw()
+        self.plot_canvas_main_graph.get_tk_widget().grid(
             row=0, column=0, padx=10, pady=10
         )  # Mostrar el lienzo en la ventana
 
-        if scatter == True:
-            self.create_scatter_points(ax)
+        # Conectar el evento de movimiento del ratón a la función
+        self.plot_canvas_main_graph.mpl_connect(
+            "motion_notify_event",
+            lambda event: self.main_graph.on_hover(event, plot_canvas=self.plot_canvas_main_graph)
+        )
+
+    def create_equalizer_graph(self):
+        self.equalizer_graph = FilterPlotter(self.filter)
+        self.equalizer_graph.plot_filtered_signal_levels()
+        self.equalizer_graph.create_scatter_points()
+        self.equalizer_graph.create_annotation_to_show_levels()
+
+        self.plot_canvas_equalizer_graph = FigureCanvasTkAgg(
+            self.equalizer_graph.figure, self.frm_equalizer_graph
+        )
+
+        self.plot_canvas_equalizer_graph.draw()
+        self.plot_canvas_equalizer_graph.get_tk_widget().grid(
+            row=0, column=0, padx=10, pady=10
+        )  # Mostrar el lienzo en la ventana
 
         # Conectar el evento de movimiento del ratón a la función
-        self.plot_canvas.mpl_connect("motion_notify_event", lambda event: self.on_hover(event, ax=ax, bars=bars, annotation=annotation))
-
-    @staticmethod
-    def create_annotation_to_show_levels(ax):
-        """ Crear el "annotation" para mostrar el nivel en dB """
-        annotation = ax.annotate(
-            "",  # Texto inicial vacío
-            xy=(0, 0),  # Posición inicial
-            xytext=(0, 5),  # Desplazamiento del texto respecto al punto (xy)
-            textcoords="offset points",  # La posición de xytext es relativa a xy
-            bbox=dict(
-                boxstyle="round,pad=0.3", fc="yellow", alpha=0.8
-            ),  # Cuadro de fondo
-            fontsize=10,  # Tamaño del texto
-            color="black",  # Color del texto
-            ha="center",  # Alinear horizontalmente el texto en el centro
-            visible=False,  # Ocultar al inicio
+        self.plot_canvas_equalizer_graph.mpl_connect(
+            "motion_notify_event",
+            lambda event: self.equalizer_graph.on_hover(event, plot_canvas=self.plot_canvas_equalizer_graph)
         )
-        return annotation
-
-    def on_hover(self, event, ax, bars, annotation):
-        """Función para mostrar el valor al pasar el cursor"""
-        if (
-            event.inaxes == ax
-        ):  # Verifica si el cursor está dentro del área de la gráfica
-            for bar, level, freq in zip(
-                bars, self.filter.filtered_bands_levels , self.filter.fm_selected_bands
-            ):
-                contains, _ = bar.contains(
-                    event
-                )  # Verifica si el cursor está sobre una barra
-                if contains:
-                    # Posicionar la anotación encima de la barra
-                    annotation.set_text(
-                        f"{level:.1f} dB"
-                    )  # Muestra el nivel en dB
-                    annotation.xy = (
-                        freq,
-                        level + 1,
-                    )  # Lo coloca sobre la barra
-                    annotation.set_visible(True)  # Lo hace visible
-                    self.plot_canvas.draw_idle()  # Redibuja solo si hay cambios
-                    return
-        self.annotation.set_visible(
-            False
-        )  # Oculta la anotación si no está sobre una barra
-        self.plot_canvas.draw_idle()
-
-    def create_scatter_points(self, ax):
-        """ Crear puntos en la misma posición que las barras, cambiarán con la ecualización """
-        self.scatter_points = ax.scatter(
-            self.filter.fm_selected_bands, self.filter.filtered_bands_levels, color="red", zorder=3
-        )
-
 
     def on_band_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de banda"""
@@ -371,12 +368,12 @@ class GUI:
         self.check_conditions()
 
     def clear_bands(self):
-        """ Limpiar las bandas seleccionadas """
+        """Limpiar las bandas seleccionadas"""
         self.combo_low_freq.set("")
         self.combo_high_freq.set("")
 
     def get_bands_for_band_type(self):
-        """ Obtener las bandas disponibles para el tipo de banda seleccionado """
+        """Obtener las bandas disponibles para el tipo de banda seleccionado"""
         if self.band_type.get() == "1/1":
             bands = NOMINAL_OCTAVE_FREQ
         elif self.band_type.get() == "1/3":
@@ -385,7 +382,7 @@ class GUI:
         return bands
 
     def update_bands(self):
-        """ Actualizar las bandas disponibles en el combobox """
+        """Actualizar las bandas disponibles en el combobox"""
 
         # Obtener bandas nominales y frecuencias de corte marcadas
         bands = self.get_bands_for_band_type()
@@ -405,12 +402,12 @@ class GUI:
                     self.combo_low_freq.set(bands[0])
                     self.combo_low_freq.config(state="disabled")
                     self.combo_high_freq["values"] = bands
-                
+
                 case "high_pass":
                     self.combo_high_freq.set(bands[-1])
                     self.combo_high_freq.config(state="disabled")
                     self.combo_low_freq["values"] = bands
-                
+
                 case "band_pass":
                     self.update_bandpass_bands(bands, selected_fl, selected_fh)
 
@@ -424,23 +421,33 @@ class GUI:
                     self.combo_high_freq.config(state="disabled")
 
     def update_bandpass_bands(self, bands, selected_fl, selected_fh):
-        """ Actualizar las bandas disponibles para el filtro paso banda """
+        """Actualizar las bandas disponibles para el filtro paso banda"""
         if selected_fl == "" and selected_fh == "":  # Ninguna seleccionada
             self.combo_low_freq["values"] = bands
             self.combo_high_freq["values"] = bands
 
         elif selected_fl != "" and selected_fh != "":  # Una de las dos
-            self.combo_high_freq["values"] = bands[bands.index(float(selected_fl)) :]
-            self.combo_low_freq["values"] = bands[: bands.index(float(selected_fh)) + 1]
+            self.combo_high_freq["values"] = bands[
+                bands.index(float(selected_fl)) :
+            ]
+            self.combo_low_freq["values"] = bands[
+                : bands.index(float(selected_fh)) + 1
+            ]
 
         # Ambas seleccionadas
         if selected_fl != "":
-            self.combo_high_freq["values"] = bands[bands.index(float(selected_fl)) :]
+            self.combo_high_freq["values"] = bands[
+                bands.index(float(selected_fl)) :
+            ]
         elif selected_fh != "":
-            self.combo_low_freq["values"] = bands[: bands.index(float(selected_fh)) + 1]
+            self.combo_low_freq["values"] = bands[
+                : bands.index(float(selected_fh)) + 1
+            ]
 
-    def delete_and_change_entry_value(self, entry, value, initial_pos=0, final_pos=tk.END):
-        """ Eliminar el contenido de un entry y cambiarlo por otro """
+    def delete_and_change_entry_value(
+        self, entry, value, initial_pos=0, final_pos=tk.END
+    ):
+        """Eliminar el contenido de un entry y cambiarlo por otro"""
         entry.delete(initial_pos, final_pos)
         entry.insert(initial_pos, value)
 
@@ -500,7 +507,7 @@ class GUI:
                 )
 
     def check_conditions(self, event=None):
-        """ Comprueba si se puede activar el botón de filtrado """
+        """Comprueba si se puede activar el botón de filtrado"""
         if all(
             [
                 self.noise_type.get() != "",
@@ -510,9 +517,9 @@ class GUI:
             ]
         ):
             self.btn_apply_filter.config(state="normal")
-    
+
     def apply_filter(self):
-        """ Aplicar el filtro seleccionado al tipo de ruido seleccionado """
+        """Aplicar el filtro seleccionado al tipo de ruido seleccionado"""
         try:
             # Verificar si la ventana principal está activa antes de continuar
             if not self.root.winfo_exists():
@@ -521,9 +528,11 @@ class GUI:
             # La ventana principal ha sido destruida
             return
 
-        self.filter.signal = self.noise_generator.generate_pink_noise(duration=60)
+        self.filter.signal = self.noise_generator.generate_pink_noise(
+            duration=60
+        )
         self.filter.octave_filter()
-        
+
         # Si el hilo de reproducción está activo se detiene
         self.audio_player.stop_noise_thread()
 
@@ -549,10 +558,14 @@ class GUI:
         else:
             # Decidir tipo de filtro y de ruido para filtrar
             if selected_noise == "WHITE NOISE":  # RUIDO BLANCO
-                self.filter.signal = self.noise_generator.generate_white_noise(time_entry)
+                self.filter.signal = self.noise_generator.generate_white_noise(
+                    time_entry
+                )
 
             elif selected_noise == "PINK NOISE":  # RUIDO ROSA
-                self.filter.signal = self.noise_generator.generate_pink_noise(time_entry)
+                self.filter.signal = self.noise_generator.generate_pink_noise(
+                    time_entry
+                )
 
             if selected_filter == "1/1":  # 1/1 OCTAVA
                 (
@@ -573,7 +586,7 @@ class GUI:
                     self.fm_selected_bands,
                     self.fh_selected_bands,
                 ) = self.filter.third_octave_filter(bandas_a_filtrar)
-    
+
             # self.filter.plot_filtered_signal_levels()
             # self.create_equalizer_gui()
             # self.create_equalizer_gui_buttons()

@@ -174,3 +174,6 @@ DIARIO DEL TFG
 
 02/03/2025
     - Cuando el ruido termina no se bloquea el stop ruido -> ARREGLAR
+
+04/03/2025
+    - He creado una clase llamada FilterPlotter para que se encargue de todo lo relacionado con los gráficos
