@@ -134,15 +134,6 @@ class Filter:
         # Recombino las bandas filtradas para obtener la señal final filtrada
         self.recombine_bands()
 
-        return (
-            self.filtered_signal,
-            self.filtered_bands_levels,
-            fm,
-            self.fl_selected_bands,
-            self.fm_selected_bands,
-            self.fh_selected_bands,
-        )
-
     def third_octave_filter(
         self,
         selected_bands=[

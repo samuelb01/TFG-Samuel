@@ -7,6 +7,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter import TclError
 
+import numpy as np
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from config import NOMINAL_OCTAVE_FREQ, NOMINAL_THIRDOCTAVE_FREQ, DURATION
@@ -30,6 +32,8 @@ class GUI:
         self.computer_screen_height = self.root.winfo_screenheight()
 
         self.main_window = ttk.Notebook(self.root)  # Ventana principal
+        self.tab_main = None
+        self.tab_equalizer = None
 
         self.noise_type = tk.StringVar()
         self.band_type = tk.StringVar()
@@ -45,6 +49,11 @@ class GUI:
         self.main_window.grid()
         self.root.mainloop()
 
+    def clear_frame(self, frame):
+        """ Elimina todos los widgets dentro del frame"""
+        for widget in frame.winfo_children():
+            widget.destroy()
+
     def create_main_tab(self):
         """Crear la pestaña principal de la interfaz"""
         self.tab_main = ttk.Frame(self.main_window)
@@ -55,9 +64,12 @@ class GUI:
 
     def create_equalizer_tab(self):
         """Crear la pestaña del ecualizador de la interfaz"""
+        if self.tab_equalizer != None:
+            self.tab_equalizer.destroy()
+
         self.tab_equalizer = ttk.Frame(self.main_window)
         self.main_window.add(self.tab_equalizer, text="Equalizer")
-
+ 
         # >>>>> Crear el frame del ecualizador <<<<<
         self.create_frame_equalizer()
 
@@ -281,7 +293,7 @@ class GUI:
             self.frm_options,
             text="REPRODUCIR",
             command=lambda: [
-                self.audio_player.start_noise_thread(self.filtered_noise),
+                self.audio_player.start_noise_thread(self.filter.filtered_signal),
                 self.btn_stop.config(state="!disabled"),
             ],
             state="disabled",
@@ -307,10 +319,90 @@ class GUI:
         self.frm_equalizer_graph.grid(row=0, column=0, sticky="nsew")
 
     def create_scales_equalizer(self):
+        """ Crea la interfaz con los botones delizables para ecualizazr la señal """
         self.frm_equalizer_scales = ttk.Frame(
             self.tab_equalizer, relief="groove", borderwidth=2
         )
         self.frm_equalizer_scales.grid(row=1, column=0, sticky="nsew")
+
+        self.clear_frame(self.frm_equalizer_scales)
+
+        # Crear canvas con barra de desplazamiento para evitar desbordamiento en la pantalla
+        self.scales_canvas = tk.Canvas(self.frm_equalizer_scales)
+        self.scales_scrollbar = tk.Scrollbar(self.frm_equalizer_scales, orient="horizontal", command=self.scales_canvas.xview)
+
+        # Sincronizar Canvas con la barra de desplazamiento
+        self.scales_canvas.config(xscrollcommand=self.scales_scrollbar.set)
+
+        # Se colocan el Canvas y la barra de desplazamiento
+        self.scales_canvas.grid(row=0, column=0, sticky="nsew")
+        self.scales_scrollbar.grid(row=1, column=0, sticky="ew")
+
+        # Sliders ocupan todo el espacio del menú frm_equalizer
+        self.frm_equalizer_scales.grid_columnconfigure(0, weight=1)
+
+        # Crear un Frame dentro del scales_canvas para colocar los sliders
+        self.frm_scales = tk.Frame(self.scales_canvas)
+        self.scales_canvas.create_window(
+            (0, 0), window=self.frm_scales, anchor="nw"
+        )
+
+        self.equalizer_scales = []  # Reiniciar array con deslizadores
+        self.equalizer_scales_labels = (
+            []
+        )  # Reiniciar etiquetas para evitar duplicados
+
+        frequencies = np.array(
+            [
+                self.filter.nominal_frequencies[
+                    np.abs(self.filter.nominal_frequencies - f).argmin()
+                ]
+                for f in self.filter.fm_selected_bands
+            ]
+        )
+
+        # Formatear la salida para evitar ".0" en enteros
+        formatted_frequencies = [
+            int(f) if f.is_integer() else f for f in frequencies
+        ]
+
+        self.update_scales_values_and_labels(formatted_frequencies)
+
+        # Actualizar el área desplazable (scrollable region)
+        self.frm_scales.update_idletasks()  # Actualiza la interfaz antes de ajustar el área desplazable
+        self.scales_canvas.config(
+            scrollregion=self.scales_canvas.bbox("all")
+        )  # Indica la región desplazable del Canvas, en este caso todo el Canvas
+        self.scales_canvas.config(width=300, height=150)
+
+    def update_scales_values_and_labels(self, formatted_frequencies):
+        for i, freq in enumerate(formatted_frequencies):
+            label_var = tk.StringVar(value="0.0 dB")
+
+            freq_label = ttk.Label(self.frm_scales, text=f"{freq} Hz")
+            freq_label.grid(row=0, column=i)
+
+            freq_scale = ttk.Scale(
+                self.frm_scales,
+                from_=10,
+                to=-10,
+                orient="vertical",
+                command=lambda value, var=label_var: self.update_scales_gain(
+                    float(value), var
+                ),  # Enlazar cada slider con su propia etiqueta
+            )
+            freq_scale.grid(row=1, column=i)
+
+            scale_label = ttk.Label(
+                self.frm_scales,
+                textvariable=label_var,
+                width=8,  # Fijar un ancho fijo -> Tamaño máximo del texto "-xx.x_dB"
+                anchor="center",  # Texto etiqueta centrado
+            )
+            scale_label.grid(row=2, column=i)
+
+            self.equalizer_scales_labels.append(scale_label)
+            self.equalizer_scales.append(freq_scale)
 
     def create_main_graph(self):
         self.main_graph = FilterPlotter(self.filter)
@@ -352,6 +444,34 @@ class GUI:
             "motion_notify_event",
             lambda event: self.equalizer_graph.on_hover(event, plot_canvas=self.plot_canvas_equalizer_graph)
         )
+
+    def update_scales_gain(self, value, label_var):
+        """Actualiza la etiqueta del deslizador correspondiente y
+        superpone en la gráfica la ganancia aplicada
+        """
+        label_var.set(f"{float(value):.1f} dB")
+        self.update_equalized_plot_points()
+
+    def update_equalized_plot_points(self):
+        """Actualiza los puntos rojos en el gráfico según los valores de los sliders"""
+        # Obtener los valores actuales de los sliders
+        new_levels = [scale.get() for scale in self.equalizer_scales]
+
+        # Sumar los valores de los sliders a los niveles originales
+        equalized_levels = np.array(self.filter.filtered_bands_levels) + np.array(new_levels)
+
+        # Actualizar la posición de los puntos en la gráfica
+        # Generar matriz de coordenadas X (frecuencia) e Y (niveles ecualizazdos) para cada punto
+        self.equalizer_graph.scatter_points.set_offsets(
+            np.c_[self.filter.fm_selected_bands, equalized_levels]
+        )
+
+        # Eliminar la línea anterior si existe
+        if hasattr(self, "spline_line"):
+            self.spline_line.remove()
+        
+        # Redibujar el gráfico con los nuevos valores
+        self.plot_canvas_equalizer_graph.draw_idle()  # actualiza la gráfica sin bloquear la interfaz.
 
     def on_band_type_selected(self):
         """Aplica todo cuando se selecciona un radio button de tipo de banda"""
@@ -561,32 +681,12 @@ class GUI:
                 self.filter.signal = self.noise_generator.generate_white_noise(
                     time_entry
                 )
-
             elif selected_noise == "PINK NOISE":  # RUIDO ROSA
                 self.filter.signal = self.noise_generator.generate_pink_noise(
                     time_entry
                 )
 
             if selected_filter == "1/1":  # 1/1 OCTAVA
-                (
-                    self.filtered_noise,
-                    self.band_levels,
-                    self.fm,
-                    self.fl_selected_bands,
-                    self.fm_selected_bands,
-                    self.fh_selected_bands,
-                ) = self.filter.octave_filter(bandas_a_filtrar)
-
+                self.filter.octave_filter(bandas_a_filtrar)
             elif selected_filter == "1/3":  # 1/3 OCTAVA
-                (
-                    self.filtered_noise,
-                    self.band_levels,
-                    self.fm,
-                    self.fl_selected_bands,
-                    self.fm_selected_bands,
-                    self.fh_selected_bands,
-                ) = self.filter.third_octave_filter(bandas_a_filtrar)
-
-            # self.filter.plot_filtered_signal_levels()
-            # self.create_equalizer_gui()
-            # self.create_equalizer_gui_buttons()
+                self.filter.third_octave_filter(bandas_a_filtrar)

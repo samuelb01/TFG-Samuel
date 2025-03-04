@@ -52,7 +52,7 @@ class FilterPlotter(Filter):
         self.ax.set_ylabel("Nivel (dB)")
 
         # Personalizar el eje X para mostrar todas las frecuencias centrales
-        self.ax.set_xticks(self.fm_selected_bands)
+        self.ax.set_xticks(self.nominal_frequencies)
         self.ax.set_xticklabels(
             [
                 f"{int(freq)} Hz" if freq >= 100 else f"{freq:.1f} Hz"
