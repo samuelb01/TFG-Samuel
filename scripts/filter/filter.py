@@ -93,7 +93,7 @@ class Filter:
         for i, sos in enumerate(sos_butter_filters):
             filtered_data = sosfilt(sos, self.signal)
             self.filtered_bands[i, :] = filtered_data
-
+    
     def calc_signal_band_levels(self):
         """Calcula los niveles de las bandas de la señal filtrada"""
         self.filtered_bands_levels = []
@@ -164,15 +164,6 @@ class Filter:
 
         # Recombino las bandas filtradas para obtener la señal final filtrada
         self.recombine_bands()
-
-        return (
-            self.filtered_signal,
-            self.filtered_bands_levels,
-            fm,
-            self.fl_selected_bands,
-            self.fm_selected_bands,
-            self.fh_selected_bands,
-        )
 
     def verify_filter_compliance(self, filter_class="1"):
         """ Verifica si la señal filtrada cumple con los límites de aceptación de la norma ISO 61260-1""" 

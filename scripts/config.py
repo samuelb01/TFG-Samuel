@@ -35,7 +35,7 @@ NOMINAL_THIRDOCTAVE_FREQ = [
 NOMINAL_OCTAVE_FREQ = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 G = 10 ** (3 / 10)  # Octave frecuency ratio
 FR = 1000  # Reference frequency
-FILTER_ORDER = 16  # Orden del filtro
+FILTER_ORDER = 32  # Orden del filtro
 DURATION = 60 # Duración del ruido
 SAMPLE_RATE = 48000 # Frecuencia de muestreo
 # Valor muy pequeño cercano a 0, usado en la norma ISO 61260-1 para obtener valores cercanos a las frecuencias del filtro paso-banda

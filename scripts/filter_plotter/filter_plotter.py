@@ -127,6 +127,8 @@ class FilterPlotter(Filter):
             # Respuesta en frecuencia del filtro
             w, h = sosfreqz(sos, worN=50000, fs=self.fs)
 
+            print(w)
+
             # Reemplazar valores cero por un valor muy pequeño antes de calcular el logaritmo para evitar errores
             h = np.where(h == 0, EPSILON, h)
             attenuation_db = 20 * np.log10(abs(h))
@@ -142,4 +144,31 @@ class FilterPlotter(Filter):
         plt.grid(True, which="both", linestyle="--", linewidth=0.5)
         plt.legend()
 
+        plt.show()
+
+    def plot_frequency_spectrum(self):
+        """
+        Calcula y grafica el espectro de frecuencia de la señal filtrada.
+        """
+        # Calculamos la FFT de la señal filtrada
+        fft_signal = np.fft.fft(self.filtered_bands[6])
+        
+        # Obtenemos las frecuencias correspondientes
+        freqs = np.fft.fftfreq(len(fft_signal), d=1/self.fs)
+        
+        # Tomamos solo la parte positiva del espectro
+        half = len(fft_signal) // 2
+        fft_signal = fft_signal[:half]
+        freqs = freqs[:half]
+        
+        # Calculamos la magnitud de la FFT
+        magnitude = np.abs(fft_signal)
+        
+        # Graficamos el espectro de frecuencia
+        plt.figure(figsize=(10, 6))
+        plt.plot(freqs, magnitude)
+        plt.title("Espectro de Frecuencia de la Señal Filtrada")
+        plt.xlabel("Frecuencia (Hz)")
+        plt.ylabel("Magnitud")
+        plt.grid(True)
         plt.show()

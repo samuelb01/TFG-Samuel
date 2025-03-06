@@ -131,10 +131,6 @@ class GUI:
             height=self.computer_screen_height * 0.85,
         )
 
-        # self.create_main_graph(self.frm_graph)
-
-        # self.create_graph()
-
     def create_radio_buttons_noise_type(self):
         """Crear los radio buttons para seleccionar el tipo de ruido"""
         ttk.Label(self.frm_options, text="\nSeleccione el tipo de ruido:").grid(
@@ -272,6 +268,7 @@ class GUI:
         self.time_entry.grid(row=16, columnspan=2)
 
     def create_button_apply_filter(self):
+        """ Crea botón que aplica el filtro """
         self.btn_apply_filter = ttk.Button(
             self.frm_options,
             text="APLICAR EL FILTRO",
@@ -288,6 +285,7 @@ class GUI:
         self.btn_apply_filter.grid(row=18, columnspan=2)
 
     def create_button_play_stop_noise(self):
+        """ Crea los botones de PLAY y STOP para el ruido"""
         # >>>>> Botón de reproducción <<<<<
         self.btn_play_noise = ttk.Button(
             self.frm_options,
@@ -313,6 +311,7 @@ class GUI:
         self.btn_stop.grid(row=20, columnspan=2)
 
     def create_frame_equalizer(self):
+        """ Crea el marco para el ecaulziador"""
         self.frm_equalizer_graph = ttk.Frame(
             self.tab_equalizer, relief="groove", borderwidth=2
         )
@@ -376,6 +375,7 @@ class GUI:
         self.scales_canvas.config(width=300, height=150)
 
     def update_scales_values_and_labels(self, formatted_frequencies):
+        """ Actualiza los valores de los deslizadores y las frecuencias a las que pertenecen"""
         for i, freq in enumerate(formatted_frequencies):
             label_var = tk.StringVar(value="0.0 dB")
 
@@ -405,6 +405,7 @@ class GUI:
             self.equalizer_scales.append(freq_scale)
 
     def create_main_graph(self):
+        """ Crea el gráfico de la pestaña principal (sin ecualización)"""
         self.main_graph = FilterPlotter(self.filter)
         self.main_graph.plot_filtered_signal_levels()
         self.main_graph.create_annotation_to_show_levels()
@@ -690,3 +691,6 @@ class GUI:
                 self.filter.octave_filter(bandas_a_filtrar)
             elif selected_filter == "1/3":  # 1/3 OCTAVA
                 self.filter.third_octave_filter(bandas_a_filtrar)
+
+            arr = self.filter.filtered_bands[0]
+            print(arr)
