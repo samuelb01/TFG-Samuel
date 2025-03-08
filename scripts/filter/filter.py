@@ -18,7 +18,6 @@ from config import (
     ACCEPTANCE_LIMITS_CLASS2,
 )
 
-
 class Filter:
     def __init__(self):
         """Constructor de la clase Filter"""
@@ -159,6 +158,30 @@ class Filter:
         # Aplico los filtros
         self.apply_sos_filter(sos_butter_filters)
 
+        # Calculo niveles en dB
+        self.calc_signal_band_levels()
+
+        # Recombino las bandas filtradas para obtener la señal final filtrada
+        self.recombine_bands()
+
+    def equalize_signal(self, band_gains_db):
+        band_gains_linear = 10**(band_gains_db/20)
+
+        # Inicializar matriz de bandas filtradas
+        equalized_bands = np.zeros(
+            (len(self.fm_selected_bands), len(self.signal))
+        )
+
+        # Aplico la ganancia lineal a cada valor de las bandas
+        for i, band in enumerate(self.filtered_bands):
+            equalized_bands[i, :] = band * band_gains_linear[i]
+
+        # Reinicio variables para actualizar a la señal filtrada ecualizada
+        self.filtered_bands = None
+        self.filtered_signal = None
+
+        self.filtered_bands = equalized_bands
+        
         # Calculo niveles en dB
         self.calc_signal_band_levels()
 

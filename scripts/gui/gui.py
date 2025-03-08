@@ -76,8 +76,11 @@ class GUI:
         # >>>>> Crear la gráfica con los niveles para el ecualizador <<<<<
         self.create_equalizer_graph()
 
+        # >>>>> Crear el frame para poner botones relacionados con la ecualización <<<<<
+        self.create_frame_equalizer_options()
+
         # >>>>> Crear los sliders del ecualizador <<<<<
-        self.create_scales_equalizer()
+        self.create_equalizer_scales()
 
     def create_frame_options(self):
         """Crear el frame de opciones de la pestaña principal"""
@@ -272,14 +275,7 @@ class GUI:
         self.btn_apply_filter = ttk.Button(
             self.frm_options,
             text="APLICAR EL FILTRO",
-            command=lambda: [
-                self.check_selected_time_type(),
-                self.apply_filter(),
-                self.create_main_graph(),
-                self.create_equalizer_tab(),
-                self.check_conditions(),
-                self.btn_play_noise.config(state="!disabled"),
-            ],
+            command=self.on_apply_filter,
             state="disabled",
         )
         self.btn_apply_filter.grid(row=18, columnspan=2)
@@ -311,14 +307,26 @@ class GUI:
         self.btn_stop.grid(row=20, columnspan=2)
 
     def create_frame_equalizer(self):
-        """ Crea el marco para el ecaulziador"""
+        """ Crea el marco para el ecaulziador """
         self.frm_equalizer_graph = ttk.Frame(
             self.tab_equalizer, relief="groove", borderwidth=2
         )
         self.frm_equalizer_graph.grid(row=0, column=0, sticky="nsew")
 
-    def create_scales_equalizer(self):
-        """ Crea la interfaz con los botones delizables para ecualizazr la señal """
+    def create_frame_equalizer_options(self):
+        """ Crea las opciones para oder ecualizar """
+        self.frm_equalizer_options = ttk.Frame(self.tab_equalizer, relief="groove", borderwidth=6)
+        self.frm_equalizer_options.grid(row=0, column=1, rowspan=2, columnspan=2, sticky="nsew")
+
+        self.btn_apply_equalization = ttk.Button(
+            self.frm_equalizer_options,
+            text="Aplicar ecualización",
+            command=self.on_apply_equalization,
+        )
+        self.btn_apply_equalization.grid(row=0, column=0)
+
+    def create_equalizer_scales(self):
+        """ Crea la interfaz con los botones delizables para ecualizar la señal """
         self.frm_equalizer_scales = ttk.Frame(
             self.tab_equalizer, relief="groove", borderwidth=2
         )
@@ -337,13 +345,13 @@ class GUI:
         self.scales_canvas.grid(row=0, column=0, sticky="nsew")
         self.scales_scrollbar.grid(row=1, column=0, sticky="ew")
 
-        # Sliders ocupan todo el espacio del menú frm_equalizer
+        # Sliders ocupan todo el espacio del menú frm_equalizer_scales
         self.frm_equalizer_scales.grid_columnconfigure(0, weight=1)
 
         # Crear un Frame dentro del scales_canvas para colocar los sliders
-        self.frm_scales = tk.Frame(self.scales_canvas)
+        self.frm_scales = tk.Frame(self.scales_canvas, relief="raised", borderwidth=15)
         self.scales_canvas.create_window(
-            (0, 0), window=self.frm_scales, anchor="nw"
+            (0, 0), window=self.frm_scales, anchor="center"
         )
 
         self.equalizer_scales = []  # Reiniciar array con deslizadores
@@ -692,5 +700,16 @@ class GUI:
             elif selected_filter == "1/3":  # 1/3 OCTAVA
                 self.filter.third_octave_filter(bandas_a_filtrar)
 
-            arr = self.filter.filtered_bands[0]
-            print(arr)
+    def on_apply_filter(self):
+        self.check_selected_time_type()
+        self.apply_filter()
+        self.create_main_graph()
+        self.create_equalizer_tab()
+        self.check_conditions()
+        self.btn_play_noise.config(state="!disabled")
+
+    def on_apply_equalization(self):
+        print("Se aplica la ecualización")
+        scales_gain_db = np.array([scale.get() for scale in self.equalizer_scales])
+        self.filter.equalize_signal(scales_gain_db)
+        self.create_equalizer_graph()
