@@ -72,18 +72,22 @@ class GUI:
  
         # >>>>> Crear el frame del ecualizador <<<<<
         self.create_frame_equalizer()
-
         # >>>>> Crear la gráfica con los niveles para el ecualizador <<<<<
         self.create_equalizer_graph()
 
-        # >>>>> Crear el frame para poner botones relacionados con la ecualización <<<<<
-        self.create_frame_equalizer_options()
+        # >>>>> Crear el frame para graficar los datos del usuario <<<<<
+        self.create_frame_user_data()
+        # >>>>> Crear la gráfica con los niveles para los niveles promediados por el usuario <<<<<
+        self.create_user_data_graph()
 
         # >>>>> Crear los sliders del ecualizador <<<<<
         self.create_equalizer_scales()
 
+        # >>>>> Crear el frame para poner botones relacionados con la ecualización <<<<<
+        self.create_frame_equalizer_options()
+
     def create_frame_options(self):
-        """Crear el frame de opciones de la pestaña principal"""
+        """ Crear el frame de opciones de la pestaña principal """
         self.frm_options = ttk.Frame(
             self.tab_main, padding=10, relief="groove", borderwidth=2
         )
@@ -307,23 +311,49 @@ class GUI:
         self.btn_stop.grid(row=20, columnspan=2)
 
     def create_frame_equalizer(self):
-        """ Crea el marco para el ecaulziador """
+        """ Crea el marco para el ecualizador """
         self.frm_equalizer_graph = ttk.Frame(
             self.tab_equalizer, relief="groove", borderwidth=2
         )
         self.frm_equalizer_graph.grid(row=0, column=0, sticky="nsew")
 
+        self.frm_equalizer_graph.config(width=self.computer_screen_width*0.5)
+
+    def create_frame_user_data(self):
+        """ Crear el marco para representar los valores promediados del usuario """
+        self.frm_user_data_graph = ttk.Frame(
+            self.tab_equalizer, relief="groove", borderwidth=2
+        )
+        self.frm_user_data_graph.grid(row=0, column=1, sticky="nsew")
+
+
     def create_frame_equalizer_options(self):
         """ Crea las opciones para oder ecualizar """
         self.frm_equalizer_options = ttk.Frame(self.tab_equalizer, relief="groove", borderwidth=6)
-        self.frm_equalizer_options.grid(row=0, column=1, rowspan=2, columnspan=2, sticky="nsew")
+        self.frm_equalizer_options.grid(row=1, column=1, sticky="nsew")
 
+        # >>>> Aplanar los deslizadores <<<<<
+        self.btn_reset_scales = ttk.Button(
+            self.frm_equalizer_options,
+            text="Aplanar deslizadores",
+            command=self.reset_scales,
+        )
+        self.btn_reset_scales.grid(row=0, column=0)
+
+        # >>>> Aplicar ecualización <<<<<
         self.btn_apply_equalization = ttk.Button(
             self.frm_equalizer_options,
             text="Aplicar ecualización",
             command=self.on_apply_equalization,
         )
-        self.btn_apply_equalization.grid(row=0, column=0)
+        self.btn_apply_equalization.grid(row=1, column=0)
+
+        # >>>> Introducir valores promediados en el recinto funete manualmente <<<<
+        self.btn_introduce_user_data = ttk.Button(
+            self.frm_equalizer_options,
+            text="Introducir datos manualmente",
+        )
+        self.btn_introduce_user_data.grid(row=2,column=0)
 
     def create_equalizer_scales(self):
         """ Crea la interfaz con los botones delizables para ecualizar la señal """
@@ -412,8 +442,12 @@ class GUI:
             self.equalizer_scales_labels.append(scale_label)
             self.equalizer_scales.append(freq_scale)
 
+    def reset_scales(self):
+        for scale in self.equalizer_scales:
+            scale.set(0)
+
     def create_main_graph(self):
-        """ Crea el gráfico de la pestaña principal (sin ecualización)"""
+        """ Crea el gráfico de la pestaña principal (sin ajustes de ecualización)"""
         self.main_graph = FilterPlotter(self.filter)
         self.main_graph.plot_filtered_signal_levels()
         self.main_graph.create_annotation_to_show_levels()
@@ -434,6 +468,7 @@ class GUI:
         )
 
     def create_equalizer_graph(self):
+        """ Representa la señal en dB en la pestaña de ecualización """
         self.equalizer_graph = FilterPlotter(self.filter)
         self.equalizer_graph.plot_filtered_signal_levels()
         self.equalizer_graph.create_scatter_points()
@@ -452,6 +487,28 @@ class GUI:
         self.plot_canvas_equalizer_graph.mpl_connect(
             "motion_notify_event",
             lambda event: self.equalizer_graph.on_hover(event, plot_canvas=self.plot_canvas_equalizer_graph)
+        )
+
+    def create_user_data_graph(self):
+        self.user_data_graph = FilterPlotter(self.filter)
+        # self.user_data_graph.filtered_bands_levels = []
+
+        self.user_data_graph.plot_filtered_signal_levels()
+        self.user_data_graph.create_annotation_to_show_levels()
+
+        self.plot_canvas_user_data_graph = FigureCanvasTkAgg(
+            self.user_data_graph.figure, self.frm_user_data_graph
+        )
+
+        self.plot_canvas_user_data_graph.draw()
+        self.plot_canvas_user_data_graph.get_tk_widget().grid(
+            row=0, column=0, padx=10, pady=10
+        )  # Mostrar el lienzo en la ventana
+
+        # Conectar el evento de movimiento del ratón a la función
+        self.plot_canvas_user_data_graph.mpl_connect(
+            "motion_notify_event",
+            lambda event: self.user_data_graph.on_hover(event, plot_canvas=self.plot_canvas_user_data_graph)
         )
 
     def update_scales_gain(self, value, label_var):
@@ -710,6 +767,9 @@ class GUI:
 
     def on_apply_equalization(self):
         print("Se aplica la ecualización")
+        self.btn_apply_equalization.config(state="disabled")
         scales_gain_db = np.array([scale.get() for scale in self.equalizer_scales])
         self.filter.equalize_signal(scales_gain_db)
+        self.create_main_graph()
         self.create_equalizer_graph()
+        self.reset_scales()
