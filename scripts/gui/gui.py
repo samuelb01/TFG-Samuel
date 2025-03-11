@@ -39,9 +39,9 @@ class GUI:
         self.noise_type = tk.StringVar()
         self.band_type = tk.StringVar()
         self.filter_type = tk.StringVar()
-        
+
         # Diccionario para valores de los ttk.Entry del usuario
-        self.user_data_entry_vars = dict()  
+        self.user_data_entry_vars = dict()
 
         self.create_main_tab()
         # self.create_equalizer_tab()
@@ -376,7 +376,7 @@ class GUI:
 
         # Agregar el Frame al Canvas
         self.window = self.user_data_canvas.create_window(
-            (0, 0), window=self.frm_user_data_entries, anchor="ce"
+            (0, 0), window=self.frm_user_data_entries, anchor="center"
         )
 
         # Ubicar Canvas y Scrollbar en la cuadrícula
@@ -403,8 +403,8 @@ class GUI:
 
         for row, freq in enumerate(self.filter.selected_nominal_frequencies):
             ttk.Label(self.frm_user_data_entries, text=f"{freq}Hz = ").grid(
-                row=row + 1, column=0, sticky="nsew"
-            )  # +1 porque row 0 está ocupada por la etiqueta principal
+                row=row, column=0, sticky="nsew"
+            )
 
             # Se crea un StringVar para la frecuencia
             var = tk.StringVar()
@@ -416,11 +416,10 @@ class GUI:
                 validate="key",
                 validatecommand=(validate_input, "%P"),
             )
-            entry.grid(row=row + 1, column=1)
+            entry.grid(row=row, column=1)
             ttk.Label(self.frm_user_data_entries, text="dB").grid(
-                row=row + 1, column=2
+                row=row, column=2
             )
-            
 
     def create_frame_equalizer_options(self):
         """Crea las opciones para oder ecualizar"""
@@ -451,15 +450,28 @@ class GUI:
             text="Introducir datos manualmente",
             command=lambda: [
                 self.enable_widgets(self.frm_user_data_entries),
+                self.btn_apply_user_data.config(state="!disabled"),
             ],
         )
         self.btn_introduce_user_data.grid(row=2, column=0)
+
+        self.btn_apply_user_data = ttk.Button(
+            self.frm_user_data_menu,
+            text="Aplicar valores introducidos",
+            command=self.on_apply_user_data,
+            state="disabled",
+        )
+        self.btn_apply_user_data.grid(row=2, column=1)
 
         # >>>> Introducir valores promediados en el recinto fuente manualmente <<<<
         self.btn_introduce_csv = ttk.Button(
             self.frm_equalizer_options,
             text="Introducir datos .csv",
-            command=self.read_csv_data
+            command=lambda: [
+                self.read_csv_data(),
+                self.disable_widgets(self.frm_user_data_entries),
+                self.check_energy_averaging_iso_16283_1()
+            ],
         )
         self.btn_introduce_csv.grid(row=3, column=0)
 
@@ -505,7 +517,8 @@ class GUI:
 
         # Formatear la salida para evitar ".0" en enteros
         formatted_frequencies = [
-            int(f) if f.is_integer() else f for f in self.filter.selected_nominal_frequencies
+            int(f) if f.is_integer() else f
+            for f in self.filter.selected_nominal_frequencies
         ]
 
         self.update_scales_values_and_labels(formatted_frequencies)
@@ -554,9 +567,9 @@ class GUI:
     def create_main_graph(self):
         """Crea el gráfico de la pestaña principal (sin ajustes de ecualización)"""
         # Elimina la instancia si existe
-        if self.equalizer_graph:
-            del self.equalizer_graph  
-            
+        if self.main_graph:
+            del self.main_graph
+
         self.main_graph = FilterPlotter(self.filter)
         self.main_graph.plot_filtered_signal_levels()
         self.main_graph.create_annotation_to_show_levels()
@@ -582,7 +595,7 @@ class GUI:
         """Representa la señal en dB en la pestaña de ecualización"""
         # Elimina la instancia si existe
         if self.equalizer_graph:
-            del self.equalizer_graph  
+            del self.equalizer_graph
 
         self.equalizer_graph = FilterPlotter(self.filter)
         self.equalizer_graph.plot_filtered_signal_levels()
@@ -789,6 +802,40 @@ class GUI:
                     f"Se ha cambiado automaticamente la duración a {self.time_entry.get()} segundos por haber introducido un valor decimal",
                 )
 
+    def check_energy_averaging_iso_16283_1(self):
+        """ Verificar si se cumple el requisito de no superar los 8dB en bandas de tercio de octava adyacentes """
+        average_energy_levels = []
+
+        for level in self.user_data_entry_vars.values():
+            average_energy_levels.append(float(level.get()))
+
+        for idx, freq in enumerate(self.user_data_entry_vars.keys()):
+
+            if idx == 0:
+                """ Primera banda """
+                level = float(average_energy_levels[idx])
+                next_level = float(average_energy_levels[idx+1])
+
+                if abs(next_level - level) > 8:
+                    print(f"ERROR en banda de {freq} Hz")
+                
+            elif idx == len(average_energy_levels)-1:
+                """ Última banda """
+                prev_level = float(average_energy_levels[idx-1])
+                level = float(average_energy_levels[idx])
+
+                if abs(level - prev_level) > 8:
+                    print(f"ERROR en banda de {freq} Hz")
+
+            else:
+                """ Resto de bandas """
+                prev_level = float(average_energy_levels[idx-1])
+                level = float(average_energy_levels[idx])
+                next_level = float(average_energy_levels[idx+1])
+
+                if abs(level - prev_level) > 8 or abs(next_level-level) > 8:
+                    print(f"ERROR en banda de {freq} Hz")
+
     def check_conditions(self, event=None):
         """Comprueba si se puede activar el botón de filtrado"""
         if all(
@@ -853,29 +900,31 @@ class GUI:
                 self.filter.octave_filter(bandas_a_filtrar)
             elif selected_filter == "1/3":  # 1/3 OCTAVA
                 self.filter.third_octave_filter(bandas_a_filtrar)
-            
+
             self.filter.get_selected_nominal_frequencies()
 
     def read_csv_data(self):
-        archivo = filedialog.askopenfilename(filetypes=[("Archivos CSV", "*.csv")])
+        archivo = filedialog.askopenfilename(
+            filetypes=[("Archivos CSV", "*.csv")]
+        )
         if archivo:
-            with open(archivo, newline='', encoding='utf-8') as f:
+            with open(archivo, newline="", encoding="utf-8") as f:
                 lector = csv.reader(f)
                 datos = list(lector)  # Convertir a lista
 
             csv_frequencies = np.array(
-                [
-                    float(csv_f) for csv_f in datos[0][0].split(";")
-                ]
+                [float(csv_f) for csv_f in datos[0][0].split(";")]
             )
             csv_band_levels = np.array(
-                [
-                    float(csv_level) for csv_level in datos[1][0].split(";")
-                ]
+                [float(csv_level) for csv_level in datos[1][0].split(";")]
             )
 
-            if np.array_equal(self.filter.selected_nominal_frequencies, csv_frequencies):
-                for csv_level, entry in zip(csv_band_levels, self.user_data_entry_vars.values()):
+            if np.array_equal(
+                self.filter.selected_nominal_frequencies, csv_frequencies
+            ):
+                for csv_level, entry in zip(
+                    csv_band_levels, self.user_data_entry_vars.values()
+                ):
                     entry.set(csv_level)
 
                 self.root.update_idletasks()
@@ -903,6 +952,9 @@ class GUI:
         self.create_main_graph()
         self.create_equalizer_graph()
         self.reset_scales()
+
+    def on_apply_user_data(self):
+        self.check_energy_averaging_iso_16283_1()
 
     def on_close_app(self):
         """Función que se ejecuta al cerrar la ventana"""
