@@ -23,6 +23,7 @@ class Filter:
         """Constructor de la clase Filter"""
         self.filter_type = None
         self.nominal_frequencies = None
+        self.selected_nominal_frequencies = None
         self.fs = SAMPLE_RATE
         self.fl_selected_bands = None
         self.fm_selected_bands = None
@@ -31,6 +32,16 @@ class Filter:
         self.filtered_signal = None
         self.filtered_bands = None
         self.filtered_bands_levels = None
+
+    def get_selected_nominal_frequencies(self):
+        self.selected_nominal_frequencies = np.array(
+            [
+                self.nominal_frequencies[
+                    np.abs(self.nominal_frequencies - f).argmin()
+                ]
+                for f in self.fm_selected_bands
+            ]
+        )
 
     def get_frequencies(self):
         """

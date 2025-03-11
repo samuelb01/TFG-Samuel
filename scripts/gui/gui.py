@@ -4,10 +4,10 @@ from audio_player.audio_player import AudioPlayer
 from filter_plotter.filter_plotter import FilterPlotter
 
 import tkinter as tk
-from tkinter import ttk, messagebox
-from tkinter import TclError
+from tkinter import ttk, messagebox, TclError, filedialog
 
 import numpy as np
+import csv
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -39,6 +39,9 @@ class GUI:
         self.noise_type = tk.StringVar()
         self.band_type = tk.StringVar()
         self.filter_type = tk.StringVar()
+        
+        # Diccionario para valores de los ttk.Entry del usuario
+        self.user_data_entry_vars = dict()  
 
         self.create_main_tab()
         # self.create_equalizer_tab()
@@ -392,29 +395,32 @@ class GUI:
 
     def create_user_data_entry(self):
         """Crea los inputs para que el usuario introduzca los valores manualmente"""
+        # Limpio el diccionario por si acaso
+        self.user_data_entry_vars.clear()
+
         # Registro de validación
         validate_input = self.root.register(self.on_validate_user_data_input)
 
-        frequencies = np.array(
-            [
-                self.filter.nominal_frequencies[
-                    np.abs(self.filter.nominal_frequencies - f).argmin()
-                ]
-                for f in self.filter.fm_selected_bands
-            ]
-        )
-        for row, x in enumerate(frequencies):
-            ttk.Label(self.frm_user_data_entries, text=f"{x}Hz = ").grid(
+        for row, freq in enumerate(self.filter.selected_nominal_frequencies):
+            ttk.Label(self.frm_user_data_entries, text=f"{freq}Hz = ").grid(
                 row=row + 1, column=0, sticky="nsew"
             )  # +1 porque row 0 está ocupada por la etiqueta principal
-            ttk.Entry(
+
+            # Se crea un StringVar para la frecuencia
+            var = tk.StringVar()
+            self.user_data_entry_vars[freq] = var  # Guardarlo en el diccionario
+
+            entry = ttk.Entry(
                 self.frm_user_data_entries,
+                textvariable=var,
                 validate="key",
                 validatecommand=(validate_input, "%P"),
-            ).grid(row=row + 1, column=1)
+            )
+            entry.grid(row=row + 1, column=1)
             ttk.Label(self.frm_user_data_entries, text="dB").grid(
                 row=row + 1, column=2
             )
+            
 
     def create_frame_equalizer_options(self):
         """Crea las opciones para oder ecualizar"""
@@ -439,7 +445,7 @@ class GUI:
         )
         self.btn_apply_equalization.grid(row=1, column=0)
 
-        # >>>> Introducir valores promediados en el recinto funete manualmente <<<<
+        # >>>> Introducir valores promediados en el recinto fuente manualmente <<<<
         self.btn_introduce_user_data = ttk.Button(
             self.frm_equalizer_options,
             text="Introducir datos manualmente",
@@ -448,6 +454,14 @@ class GUI:
             ],
         )
         self.btn_introduce_user_data.grid(row=2, column=0)
+
+        # >>>> Introducir valores promediados en el recinto fuente manualmente <<<<
+        self.btn_introduce_csv = ttk.Button(
+            self.frm_equalizer_options,
+            text="Introducir datos .csv",
+            command=self.read_csv_data
+        )
+        self.btn_introduce_csv.grid(row=3, column=0)
 
     def create_equalizer_scales(self):
         """Crea la interfaz con los botones delizables para ecualizar la señal"""
@@ -489,18 +503,9 @@ class GUI:
             []
         )  # Reiniciar etiquetas para evitar duplicados
 
-        frequencies = np.array(
-            [
-                self.filter.nominal_frequencies[
-                    np.abs(self.filter.nominal_frequencies - f).argmin()
-                ]
-                for f in self.filter.fm_selected_bands
-            ]
-        )
-
         # Formatear la salida para evitar ".0" en enteros
         formatted_frequencies = [
-            int(f) if f.is_integer() else f for f in frequencies
+            int(f) if f.is_integer() else f for f in self.filter.selected_nominal_frequencies
         ]
 
         self.update_scales_values_and_labels(formatted_frequencies)
@@ -548,6 +553,10 @@ class GUI:
 
     def create_main_graph(self):
         """Crea el gráfico de la pestaña principal (sin ajustes de ecualización)"""
+        # Elimina la instancia si existe
+        if self.equalizer_graph:
+            del self.equalizer_graph  
+            
         self.main_graph = FilterPlotter(self.filter)
         self.main_graph.plot_filtered_signal_levels()
         self.main_graph.create_annotation_to_show_levels()
@@ -571,6 +580,10 @@ class GUI:
 
     def create_equalizer_graph(self):
         """Representa la señal en dB en la pestaña de ecualización"""
+        # Elimina la instancia si existe
+        if self.equalizer_graph:
+            del self.equalizer_graph  
+
         self.equalizer_graph = FilterPlotter(self.filter)
         self.equalizer_graph.plot_filtered_signal_levels()
         self.equalizer_graph.create_scatter_points()
@@ -840,6 +853,37 @@ class GUI:
                 self.filter.octave_filter(bandas_a_filtrar)
             elif selected_filter == "1/3":  # 1/3 OCTAVA
                 self.filter.third_octave_filter(bandas_a_filtrar)
+            
+            self.filter.get_selected_nominal_frequencies()
+
+    def read_csv_data(self):
+        archivo = filedialog.askopenfilename(filetypes=[("Archivos CSV", "*.csv")])
+        if archivo:
+            with open(archivo, newline='', encoding='utf-8') as f:
+                lector = csv.reader(f)
+                datos = list(lector)  # Convertir a lista
+
+            csv_frequencies = np.array(
+                [
+                    float(csv_f) for csv_f in datos[0][0].split(";")
+                ]
+            )
+            csv_band_levels = np.array(
+                [
+                    float(csv_level) for csv_level in datos[1][0].split(";")
+                ]
+            )
+
+            if np.array_equal(self.filter.selected_nominal_frequencies, csv_frequencies):
+                for csv_level, entry in zip(csv_band_levels, self.user_data_entry_vars.values()):
+                    entry.set(csv_level)
+
+                self.root.update_idletasks()
+            else:
+                messagebox.showerror(
+                    "ERROR",
+                    f"Las frecuencias del archivo con las medidas promediadas no coincide con las frecuencias filtradas",
+                )
 
     def on_apply_filter(self):
         self.check_selected_time_type()
