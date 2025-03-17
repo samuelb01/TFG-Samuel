@@ -40,8 +40,9 @@ class GUI:
         self.band_type = tk.StringVar()
         self.filter_type = tk.StringVar()
 
-        # Diccionario para valores de los ttk.Entry del usuario
+        # Diccionario para valores de los ttk.Entry del usuario y con los tk.Entry
         self.user_data_entry_vars = dict()
+        self.user_data_entry_dict = dict()
 
         self.create_main_tab()
         # self.create_equalizer_tab()
@@ -75,8 +76,14 @@ class GUI:
                 pass  # Algunos widgets como Frames no tienen "state", así que los ignoramos.
 
     def on_validate_user_data_input(self, P):
-        """Valida los valores de entrada del usuario, sólo máximo 3 dígitos enteros"""
-        if P == "" or (P.isdigit() and len(P) <= 3):
+        """ Verifica los valores de entrada del usuario, sólo máximo 3 dígitos enteros positivos o negativos """
+        if P == "":  # Permitir campo vacío
+            return True
+        if P == "-":  # Permitir solo el signo negativo
+            return True
+        if P.isdigit() and len(P) <= 3:  # Números positivos hasta 3 dígitos
+            return True
+        if P.startswith("-") and P[1:].isdigit() and len(P) <= 4:  # Números negativos hasta -999
             return True
         return False
 
@@ -397,6 +404,7 @@ class GUI:
         """Crea los inputs para que el usuario introduzca los valores manualmente"""
         # Limpio el diccionario por si acaso
         self.user_data_entry_vars.clear()
+        self.user_data_entry_dict.clear()
 
         # Registro de validación
         validate_input = self.root.register(self.on_validate_user_data_input)
@@ -420,6 +428,8 @@ class GUI:
             ttk.Label(self.frm_user_data_entries, text="dB").grid(
                 row=row, column=2
             )
+            
+            self.user_data_entry_dict[freq] = entry
 
     def create_frame_equalizer_options(self):
         """Crea las opciones para oder ecualizar"""
@@ -810,6 +820,7 @@ class GUI:
             average_energy_levels.append(float(level.get()))
 
         for idx, freq in enumerate(self.user_data_entry_vars.keys()):
+            self.user_data_entry_dict[freq].configure(foreground="black")
 
             if idx == 0:
                 """ Primera banda """
@@ -818,6 +829,7 @@ class GUI:
 
                 if abs(next_level - level) > 8:
                     print(f"ERROR en banda de {freq} Hz")
+                    self.user_data_entry_dict[freq].configure(foreground="red")
                 
             elif idx == len(average_energy_levels)-1:
                 """ Última banda """
@@ -826,6 +838,7 @@ class GUI:
 
                 if abs(level - prev_level) > 8:
                     print(f"ERROR en banda de {freq} Hz")
+                    self.user_data_entry_dict[freq].configure(foreground="red")
 
             else:
                 """ Resto de bandas """
@@ -835,6 +848,7 @@ class GUI:
 
                 if abs(level - prev_level) > 8 or abs(next_level-level) > 8:
                     print(f"ERROR en banda de {freq} Hz")
+                    self.user_data_entry_dict[freq].configure(foreground="red")
 
     def check_conditions(self, event=None):
         """Comprueba si se puede activar el botón de filtrado"""
