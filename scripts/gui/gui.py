@@ -434,7 +434,7 @@ class GUI:
     def create_frame_equalizer_options(self):
         """Crea las opciones para oder ecualizar"""
         self.frm_equalizer_options = ttk.Frame(
-            self.tab_equalizer, relief="groove", borderwidth=6
+            self.tab_equalizer, relief="groove", borderwidth=4
         )
         self.frm_equalizer_options.grid(row=1, column=1, sticky="nsew")
 
@@ -466,7 +466,7 @@ class GUI:
         self.btn_introduce_user_data.grid(row=2, column=0)
 
         self.btn_apply_user_data = ttk.Button(
-            self.frm_user_data_menu,
+            self.frm_equalizer_options,
             text="Aplicar valores introducidos",
             command=self.on_apply_user_data,
             state="disabled",
@@ -514,7 +514,7 @@ class GUI:
 
         # Crear un Frame dentro del scales_canvas para colocar los sliders
         self.frm_scales = tk.Frame(
-            self.scales_canvas, relief="raised", borderwidth=15
+            self.scales_canvas, relief="raised", borderwidth=5
         )
         self.scales_canvas.create_window(
             (0, 0), window=self.frm_scales, anchor="center"
@@ -949,6 +949,7 @@ class GUI:
                 )
 
     def on_apply_filter(self):
+        """ Aplicar filtro """
         self.check_selected_time_type()
         self.apply_filter()
         self.create_main_graph()
@@ -957,6 +958,7 @@ class GUI:
         self.btn_play_noise.config(state="!disabled")
 
     def on_apply_equalization(self):
+        """ Aplicar ecualización """
         print("Se aplica la ecualización")
         self.btn_apply_equalization.config(state="disabled")
         scales_gain_db = np.array(
@@ -968,6 +970,7 @@ class GUI:
         self.reset_scales()
 
     def on_apply_user_data(self):
+        """ Introducir datos del usuario """
         self.check_energy_averaging_iso_16283_1()
 
     def on_close_app(self):
