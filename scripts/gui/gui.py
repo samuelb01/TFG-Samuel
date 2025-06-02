@@ -255,15 +255,15 @@ class GUI:
         )
         self.radio_btn_bandpass.grid(row=9, sticky="w")
 
-        self.radio_btn_notch = ttk.Radiobutton(
-            self.frm_options,
-            text="Filtro notch",
-            variable=self.filter_type,
-            value="notch",
-            command=self.on_band_type_selected,
-            state="disabled",
-        )
-        self.radio_btn_notch.grid(row=10, sticky="w")
+        # self.radio_btn_notch = ttk.Radiobutton(
+        #     self.frm_options,
+        #     text="Filtro notch",
+        #     variable=self.filter_type,
+        #     value="notch",
+        #     command=self.on_band_type_selected,
+        #     state="disabled",
+        # )
+        # self.radio_btn_notch.grid(row=10, sticky="w") BORRAR
 
         self.radio_btn_allpass = ttk.Radiobutton(
             self.frm_options,
@@ -273,37 +273,37 @@ class GUI:
             command=self.on_band_type_selected,
             state="disabled",
         )
-        self.radio_btn_allpass.grid(row=11, sticky="w")
+        self.radio_btn_allpass.grid(row=10, sticky="w")
 
     def create_combobox_bands_selector(self):
         """Crear los combobox para seleccionar las bandas"""
-        ttk.Label(self.frm_options, text="").grid(row=12, sticky="w")
+        ttk.Label(self.frm_options, text="").grid(row=11, sticky="w")
         ttk.Label(self.frm_options, text="Banda de corte inferior:").grid(
-            row=13, column=0, sticky="w"
+            row=12, column=0, sticky="w"
         )
         ttk.Label(self.frm_options, text="Banda de corte superior:").grid(
-            row=13, column=1, sticky="w"
+            row=12, column=1, sticky="w"
         )
 
         self.combo_low_freq = ttk.Combobox(
             self.frm_options, state="disabled", postcommand=self.update_bands
         )
-        self.combo_low_freq.grid(row=14, column=0, sticky="w")
+        self.combo_low_freq.grid(row=13, column=0, sticky="w")
         self.combo_low_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
         self.combo_high_freq = ttk.Combobox(
             self.frm_options, state="disabled", postcommand=self.update_bands
         )
-        self.combo_high_freq.grid(row=14, column=1, sticky="w")
+        self.combo_high_freq.grid(row=13, column=1, sticky="w")
         self.combo_high_freq.bind("<<ComboboxSelected>>", self.check_conditions)
 
     def create_entry_noise_time(self):
         """Crear la entrada para introducir el tiempo de ruido"""
         ttk.Label(
             self.frm_options, text="\nDuración del ruido (segundos):"
-        ).grid(row=15, columnspan=2)
+        ).grid(row=14, columnspan=2)
         self.time_entry = ttk.Entry(self.frm_options)
-        self.time_entry.grid(row=16, columnspan=2)
+        self.time_entry.grid(row=15, columnspan=2)
 
     def create_button_apply_filter(self):
         """Crea botón que aplica el filtro"""
@@ -313,7 +313,7 @@ class GUI:
             command=self.on_apply_filter,
             state="disabled",
         )
-        self.btn_apply_filter.grid(row=18, columnspan=2)
+        self.btn_apply_filter.grid(row=16, columnspan=2)
 
     def create_button_play_stop_noise(self):
         """Crea los botones de PLAY y STOP para el ruido"""
@@ -329,7 +329,7 @@ class GUI:
             ],
             state="disabled",
         )
-        self.btn_play_noise.grid(row=19, columnspan=2)
+        self.btn_play_noise.grid(row=17, columnspan=2)
 
         # >>>>> Botón STOP <<<<<
         self.btn_stop = ttk.Button(
@@ -341,7 +341,7 @@ class GUI:
             ],
             state="disabled",
         )
-        self.btn_stop.grid(row=20, columnspan=2)
+        self.btn_stop.grid(row=18, columnspan=2)
 
     def create_frame_equalizer(self):
         """Crea el marco para el ecualizador"""
@@ -409,15 +409,17 @@ class GUI:
         # Registro de validación
         validate_input = self.root.register(self.on_validate_user_data_input)
 
+        # Crear etiquetas y entradas para cada frecuencia nominal seleccionada
         for row, freq in enumerate(self.filter.selected_nominal_frequencies):
             ttk.Label(self.frm_user_data_entries, text=f"{freq}Hz = ").grid(
                 row=row, column=0, sticky="nsew"
-            )
+            )  # Etiqueta para la frecuencia
 
             # Se crea un StringVar para la frecuencia
             var = tk.StringVar()
             self.user_data_entry_vars[freq] = var  # Guardarlo en el diccionario
 
+            # Crear un Entry para la frecuencia con validación
             entry = ttk.Entry(
                 self.frm_user_data_entries,
                 textvariable=var,
@@ -425,6 +427,9 @@ class GUI:
                 validatecommand=(validate_input, "%P"),
             )
             entry.grid(row=row, column=1)
+
+            entry.insert(0, "0")  # Valor por defecto
+
             ttk.Label(self.frm_user_data_entries, text="dB").grid(
                 row=row, column=2
             )
@@ -666,7 +671,7 @@ class GUI:
         self.radio_btn_lowpass.config(state="!disabled")
         self.radio_btn_highpass.config(state="!disabled")
         self.radio_btn_bandpass.config(state="!disabled")
-        self.radio_btn_notch.config(state="!disabled")
+        # self.radio_btn_notch.config(state="!disabled") BORRAR
         self.radio_btn_allpass.config(state="!disabled")
 
         self.clear_bands()
@@ -717,8 +722,8 @@ class GUI:
                 case "band_pass":
                     self.update_bandpass_bands(bands, selected_fl, selected_fh)
 
-                case "notch":
-                    self.update_bandpass_bands(bands, selected_fl, selected_fh)
+                # case "notch":
+                #     self.update_bandpass_bands(bands, selected_fl, selected_fh) BORRAR
 
                 case "all_pass":
                     self.combo_low_freq.set(bands[0])
@@ -783,9 +788,10 @@ class GUI:
 
     def check_measurement_time_iso_16283_1(self):
         """Gestiona según las bandas a medir y el tiempo seleccionado si se cumple la norma ISO 16283-1:2014"""
-        time_entry = float(self.time_entry.get())
-        fl = float(self.combo_low_freq.get())
+        time_entry = float(self.time_entry.get())  # Tiempo introducido por el usuario
+        fl = float(self.combo_low_freq.get())  # Frecuencia de corte inferior
 
+        # Se comprueba la frecuencia de corte inferior para determinar el tiempo requerido
         if fl >= 500:
             required_time = 4
         elif 100 <= fl <= 400:
@@ -817,7 +823,13 @@ class GUI:
         average_energy_levels = []
 
         for level in self.user_data_entry_vars.values():
-            average_energy_levels.append(float(level.get()))
+            # Si el valor no se puede convertir a float, se asigna 0.0
+            try:
+                value = float(level.get())
+            except (ValueError, TypeError):
+                value = 0.0  # Si no se puede convertir a float, asignar un valor por defecto (0.0)
+                level.set(str(value))  # Actualizar el Entry con el valor por defecto
+            average_energy_levels.append(value)
 
         for idx, freq in enumerate(self.user_data_entry_vars.keys()):
             self.user_data_entry_dict[freq].configure(foreground="black")

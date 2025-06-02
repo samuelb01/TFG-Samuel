@@ -22,7 +22,7 @@ class Filter:
     def __init__(self):
         """Constructor de la clase Filter"""
         self.filter_type = None
-        self.nominal_frequencies = None
+        self.nominal_frequencies = None  
         self.selected_nominal_frequencies = None
         self.fs = SAMPLE_RATE
         self.fl_selected_bands = None
@@ -34,6 +34,8 @@ class Filter:
         self.filtered_bands_levels = None
 
     def get_selected_nominal_frequencies(self):
+        """ Obtiene las frecuencias nominales seleccionadas para las bandas elegidas """
+
         self.selected_nominal_frequencies = np.array(
             [
                 self.nominal_frequencies[
@@ -49,16 +51,16 @@ class Filter:
         Las inferiores (fl), medias (fm) y superiores (fh)
         """
         if self.filter_type == "octave":
-            b = 1
+            b = 1  # Factor de octava
             x = np.arange(-5, 5)  # No incluye el último valor
         elif self.filter_type == "third-octave":
-            b = 3
+            b = 3  # Factor de tercio de octava
             x = np.arange(-16, 14)  # No incluye el último valor
 
         # Arrays con los valores de frecuencias
-        fm = FR * (G ** (x / b))
-        fl = fm * (G ** (-1 / (2 * b)))
-        fh = fm * (G ** (1 / (2 * b)))
+        fm = FR * (G ** (x / b))  # Frecuencias medias
+        fl = fm * (G ** (-1 / (2 * b)))  # Frecuencias inferiores
+        fh = fm * (G ** (1 / (2 * b)))  # Frecuencias superiores
 
         return fl, fm, fh
 
@@ -69,19 +71,23 @@ class Filter:
         # Filtrar frecuencias dentro del rango proporcionado
         indexes_selected_bands = [
             i
-            for i, f in enumerate(self.nominal_frequencies)
-            if selected_bands[0] <= f <= selected_bands[1]
+            for i, f in enumerate(self.nominal_frequencies)  # Recorre las frecuencias nominales
+            if selected_bands[0] <= f <= selected_bands[1]  # Comprueba si la frecuencia está dentro del rango seleccionado
         ]
-        self.fl_selected_bands = [fl[i] for i in indexes_selected_bands]
-        self.fm_selected_bands = [fm[i] for i in indexes_selected_bands]
-        self.fh_selected_bands = [fh[i] for i in indexes_selected_bands]
+        self.fl_selected_bands = [fl[i] for i in indexes_selected_bands]  # Frecuencias inferiores
+        self.fm_selected_bands = [fm[i] for i in indexes_selected_bands]  # Frecuencias medias
+        self.fh_selected_bands = [fh[i] for i in indexes_selected_bands]  # Frecuencias superiores
 
     def create_butter_bandpass_filters(self, order=FILTER_ORDER):
         """
         Crea los filtros Butterworth paso-banda para las bandas seleccionadas.
         """
-        sos = []
+        sos = []  # Lista para almacenar los filtros en formato Second-Order Sections (SOS)
         for low, high in zip(self.fl_selected_bands, self.fh_selected_bands):
+            # Crear filtro Butterworth paso-banda en formato SOS
+            # low: frecuencia de corte inferior, high: frecuencia de corte superior
+            # order: orden del filtro, fs: frecuencia de muestreo
+            # output: formato de salida del filtro
             sos.append(
                 butter(
                     order,
@@ -100,27 +106,27 @@ class Filter:
         self.filtered_bands = np.zeros(
             (len(self.fm_selected_bands), len(self.signal))
         )
-        for i, sos in enumerate(sos_butter_filters):
-            filtered_data = sosfilt(sos, self.signal)
-            self.filtered_bands[i, :] = filtered_data
+        for i, sos in enumerate(sos_butter_filters):  # Recorre los filtros SOS
+            filtered_data = sosfilt(sos, self.signal)  # Aplica el filtro SOS a la señal
+            self.filtered_bands[i, :] = filtered_data  # Almacena la señal filtrada en la matriz de bandas filtradas
     
     def calc_signal_band_levels(self):
         """Calcula los niveles de las bandas de la señal filtrada"""
-        self.filtered_bands_levels = []
+        self.filtered_bands_levels = []  # Lista para almacenar los niveles de las bandas filtradas
 
-        for band in self.filtered_bands:
+        for band in self.filtered_bands:  # Recorre las bandas filtradas
             rms = np.sqrt(np.mean(band**2))  # Valor de amplitud RMS
             level = 20 * np.log10(rms)  # Nivel de cada banda
-            self.filtered_bands_levels.append(level)
+            self.filtered_bands_levels.append(level)  # Añade el nivel de la banda a la lista
 
     def recombine_bands(self):
         """Recombina las bandas filtradas para obtener la señal final filtrada"""
-        self.filtered_signal = np.sum(self.filtered_bands, axis=0)
+        self.filtered_signal = np.sum(self.filtered_bands, axis=0)  # Suma las bandas filtradas para obtener la señal final filtrada
 
     def octave_filter(
         self, selected_bands=[NOMINAL_OCTAVE_FREQ[0], NOMINAL_OCTAVE_FREQ[-1]]
     ):
-        """Filtra la señal con filtro de octava"""
+        """Filtra la señal con un filtro de octava"""
         self.filter_type = "octave"
         self.nominal_frequencies = NOMINAL_OCTAVE_FREQ
 
@@ -151,7 +157,7 @@ class Filter:
             NOMINAL_THIRDOCTAVE_FREQ[-1],
         ],
     ):
-        """Filtra la señal con filtro de octava"""
+        """Filtra la señal con un filtro de tercio de octava"""
         self.filter_type = "third-octave"
         self.nominal_frequencies = NOMINAL_THIRDOCTAVE_FREQ
 
@@ -176,7 +182,8 @@ class Filter:
         self.recombine_bands()
 
     def equalize_signal(self, band_gains_db):
-        band_gains_linear = 10**(band_gains_db/20)
+        """ Ecualiza la señal filtrada aplicando las ganancias de banda en dB """
+        band_gains_linear = 10**(band_gains_db/20)  # Convertir ganancias de dB a lineales
 
         # Inicializar matriz de bandas filtradas
         equalized_bands = np.zeros(
@@ -191,7 +198,7 @@ class Filter:
         self.filtered_bands = None
         self.filtered_signal = None
 
-        self.filtered_bands = equalized_bands
+        self.filtered_bands = equalized_bands  # Actualizo las bandas filtradas con las bandas ecualizadas
         
         # Calculo niveles en dB
         self.calc_signal_band_levels()
@@ -205,14 +212,14 @@ class Filter:
         green_tick = "\u2705"  # Unicode para el símbolo de check verde
         red_cross = "\u274c"  # Unicode para el símbolo de cruz roja
 
-        if filter_class == "1":
+        if filter_class == "1":  # Clase 1 de la norma ISO 61260-1
             acceptance_limits = ACCEPTANCE_LIMITS_CLASS1
-        elif filter_class == "2":
+        elif filter_class == "2":  # Clase 2 de la norma ISO 61260-1
             acceptance_limits = ACCEPTANCE_LIMITS_CLASS2
 
         print(f'EL ORDEN DE LOS FILTROS ES -> {FILTER_ORDER}')
 
-        all_sos = self.create_butter_bandpass_filters()
+        all_sos = self.create_butter_bandpass_filters()  # Crear filtros Butterworth paso-banda en formato SOS
 
         for i, (sos, f_low, f_high) in enumerate(
             zip(all_sos, self.fl_selected_bands, self.fh_selected_bands)
@@ -224,10 +231,10 @@ class Filter:
             h = np.where(h == 0, EPSILON, h)
             attenuation_db = 20 * np.log10(abs(h))
 
-            if self.filter_type == "octave":
-                acceptance_limits = acceptance_limits
+            if self.filter_type == "octave":  
+                acceptance_limits = acceptance_limits  # Diccionario con los límites de aceptación de la norma ISO 61260-1 para bandas de octava
             elif self.filter_type == "third-octave":
-                acceptance_limits = self.create_acceptance_limits_dicc(acceptance_limits, b=3)
+                acceptance_limits = self.create_acceptance_limits_dicc(acceptance_limits, b=3)  # Diccionario con los límites de aceptación de la norma ISO 61260-1 para bandas de tercio de octava
         
             print(f"\n\n>>>>> FILTRO {i+1} <<<<<")
             # Compara la atenuación de la señal filtrada (según respuesta del filtro) con los límites de aceptación de la norma ISO 61260-1
@@ -241,42 +248,42 @@ class Filter:
                 actual_att = attenuation_db[idx]
 
 
-                if low_limit <= -actual_att < high_limit:
+                if low_limit <= -actual_att < high_limit:  # Comprueba si la atenuación está dentro de los límites de aceptación
                     print(
                         f"{green_tick} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {low_limit};{high_limit} dB)"
                     )
                     pass
-                elif -actual_att < low_limit or -actual_att > high_limit:
+                elif -actual_att < low_limit or -actual_att > high_limit:  # Comprueba si la atenuación está fuera de los límites de aceptación
                     print(
                         f"{red_cross} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {low_limit};{high_limit}dB)"
                     )
                     filter_compliance_check = False
             
-        if filter_compliance_check:
+        if filter_compliance_check:  # Comprueba si todos los filtros cumplen con la norma ISO 61260-1
             print(f"\n\n{green_tick} Todos los filtros cumplen con la norma ISO 61260-1")
-        else:
+        else:  # Si al menos un filtro no cumple con la norma ISO 61260-1
             print(f"\n\n{red_cross} Al menos un filtro no cumple con la norma ISO 61260-1")
 
     @staticmethod
     def create_acceptance_limits_dicc(acceptance_limits, b):
         """ Crea un diccionario con los límites de aceptación de la norma ISO 61260-1 para el tipo de banda de octava seleccionado """
         if b != 1:
-            new_dicc = {}
+            new_dicc = {}  # Diccionario para almacenar los nuevos límites de aceptación
 
-            keys = list(acceptance_limits.keys())
-            items = list(acceptance_limits.items())
+            keys = list(acceptance_limits.keys())  # Claves del diccionario de límites de aceptación
+            items = list(acceptance_limits.items())  # Elementos del diccionario de límites de aceptación
             temp_list = [] # Lista temporal para almacenar los valores de las bandas de alta frecuencia
 
             # Itera sobre los 10 últimos elementos del diccionario, emepzando por el último
             for key, value in reversed(items[-10:]): 
 
                 # Norma ISO 61260-1 apartado 5.10.3 y 5.10.4 -> High-frequency and low-frequency fractional-octave-band normalized frequency
-                acceptance_limit = 1 + (((G**(1/(2*b))-1)/(G**(1/2)-1)) * (key-1))
-                new_key_high = acceptance_limit
-                new_key_low = 1/acceptance_limit
+                acceptance_limit = 1 + (((G**(1/(2*b))-1)/(G**(1/2)-1)) * (key-1))  # Calcula el nuevo límite de aceptación para la banda de alta frecuencia
+                new_key_high = acceptance_limit  # Nuevo límite de aceptación para la banda de alta frecuencia
+                new_key_low = 1/acceptance_limit  # Nuevo límite de aceptación para la banda de baja frecuencia
                 
                 if keys.index(key) == 9: # límites iguales para alta y baja frecuencia
-                    new_dicc[acceptance_limit] = value
+                    new_dicc[acceptance_limit] = value  
                 else:
                     new_dicc[new_key_low] = value
                     temp_list.append((new_key_high, value))

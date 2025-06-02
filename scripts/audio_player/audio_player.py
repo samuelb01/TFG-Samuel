@@ -7,12 +7,12 @@ class AudioPlayer:
     """ Clase para reproducir audio en tiempo real """
 
     def __init__(self):
-        self.noise_thread = None
-        self.control_noise_event = threading.Event()
+        self.noise_thread = None  # Hilo para reproducir el audio
+        self.control_noise_event = threading.Event()  # Evento para controlar el hilo de reproducción
 
     def start_noise_thread(self, signal_to_play):
         """ Inicia un hilo para reproducir el audio """
-        # Varificar si el hilo ya se encuentra en ejecución, si es así se detiene
+        # Verificar si el hilo ya se encuentra en ejecución, si es así se detiene
         self.stop_noise_thread()
 
         self.control_noise_event.clear()  # Limpiar el evento de control
