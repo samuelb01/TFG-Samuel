@@ -1,6 +1,16 @@
 import numpy as np
 from config import SAMPLE_RATE
 
+
+# ==============================
+# CONSTANTES DE CALIBRACIÓN
+# ==============================
+
+FULL_SCALE = 32767        # 0 dBFS en int16
+TARGET_DBFS = -18        # Nivel RMS objetivo (estándar audio)
+TARGET_RMS = FULL_SCALE * (10 ** (TARGET_DBFS / 20))
+
+
 class NoiseGenerator:
 
     @staticmethod
@@ -21,8 +31,12 @@ class NoiseGenerator:
         # Generar ruido blanco con valores aleatorios con una distribución normal estándar (media = 0, desviación estándar = 1)
         white_noise = (np.random.randn(num_samples))
 
-        # Normalizo para un rango de 16-bits
-        white_noise *= 32767 / np.max(np.abs(white_noise))
+        # Normalización por RMS
+        rms = np.sqrt(np.mean(white_noise ** 2))
+        white_noise *= TARGET_RMS/rms
+        
+        # Protección frente a picos
+        white_noise = np.clip(white_noise, -FULL_SCALE, FULL_SCALE)
         
         return white_noise.astype(np.int16)
 
@@ -51,7 +65,7 @@ class NoiseGenerator:
         # Calculo los bins de frecuencia (representan rangos de frecuencia en la señal)
         frequency_bins = np.fft.rfftfreq(num_samples, d=1/sample_rate)
 
-        # Factor de escala para cada bin de frecuencia, creando así ruido rosa
+        # Factor de escala para cada bin de frecuencia, creando así ruido rosa (-3 dB/octava)
         factor_scale = np.zeros_like(frequency_bins)
         factor_scale[1:] = 1 / (np.sqrt(frequency_bins[1:]))
 
@@ -61,7 +75,11 @@ class NoiseGenerator:
         # Inversa de la FFT del ruido rosa para conseguirlo en el dominio temporal
         pink_noise = np.fft.irfft(pink_noise_fft)
         
-        # Normalizo para un rango de 16-bits
-        pink_noise *= 32767 / np.max(np.abs(pink_noise))
+        # Normalización por RMS
+        rms = np.sqrt(np.mean(pink_noise ** 2))
+        pink_noise *= TARGET_RMS/rms
         
+        # Protección frente a picos
+        pink_noise = np.clip(pink_noise, -FULL_SCALE, FULL_SCALE)
+
         return pink_noise.astype(np.int16)
