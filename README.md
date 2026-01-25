@@ -71,7 +71,7 @@ Tras aplicar un filtro, se activa la pestaña de ecualización para ajustar la l
 ## 4. Normativa Implementada
 
 ### 4.1 ISO 61260-1:2014 - Filtros de Banda Octava y de Octava Fraccionaria
-La aplicación utiliza filtros digitales Butterworth de orden superior (Orden 32) para garantizar una selectividad extrema. La herramienta incluye una función de verificación que compara la respuesta en frecuencia del filtro diseñado con los límites de aceptación de **Clase 1** definidos en la norma, asegurando la validez de los resultados para mediciones oficiales.
+La aplicación utiliza filtros digitales Butterworth de orden superior (Orden 32) para garantizar una selectividad extrema.
 
 ### 4.2 ISO 16283-1:2014 - Medición del Aislamiento Acústico en Edificios
 Se han integrado controles automáticos basados en esta norma:
@@ -91,4 +91,4 @@ El software ha sido desarrollado siguiendo principios de programación orientada
 
 ---
 **Autor:** Samuel Bellón Elipe
-**Grado en Ingeniería**
+**Grado en Ingeniería en Sistemas Audiovisuales y Multimedia**
