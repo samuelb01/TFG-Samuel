@@ -27,10 +27,12 @@ class GUI:
         self.root = tk.Tk()
         self.root.protocol("WM_DELETE_WINDOW", self.on_close_app)
         self.root.title("PROYECTO SAMUEL")
-        self.root.state("zoomed")  # Pantalla completa
-
-        self.computer_screen_width = self.root.winfo_screenwidth()
-        self.computer_screen_height = self.root.winfo_screenheight()
+        
+        # Habilitar redimensionamiento
+        self.root.resizable(True, True)
+        self.root.update_idletasks()
+        self.root.geometry("1200x800") # Tamaño inicial de la ventana
+        self.root.update()
 
         self.main_window = ttk.Notebook(self.root)  # Ventana principal
         self.tab_main = None
@@ -51,7 +53,10 @@ class GUI:
         # self.tab_main.grid_columnconfigure(1, weight=85)
         # self.tab_main.grid_columnconfigure(0, weight=15)
 
-        self.main_window.grid()
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        self.main_window.grid(row=0, column=0, sticky="nsew")
+
         self.root.mainloop()
 
     def clear_frame(self, frame):
@@ -92,6 +97,11 @@ class GUI:
         self.tab_main = ttk.Frame(self.main_window)
         self.main_window.add(self.tab_main, text="Main")
 
+        # Configurar pesos de las columnas: la gráfica (col 1) tendrá más peso que el menú (col 0)
+        self.tab_main.grid_columnconfigure(0, weight=1)
+        self.tab_main.grid_columnconfigure(1, weight=4)
+        self.tab_main.grid_rowconfigure(0, weight=1)
+
         self.create_frame_options()
         self.create_frame_graph()
 
@@ -102,6 +112,11 @@ class GUI:
 
         self.tab_equalizer = ttk.Frame(self.main_window)
         self.main_window.add(self.tab_equalizer, text="Equalizer")
+
+        self.tab_equalizer.grid_columnconfigure(0, weight=3)
+        self.tab_equalizer.grid_columnconfigure(1, weight=1)
+        self.tab_equalizer.grid_rowconfigure(0, weight=3)
+        self.tab_equalizer.grid_rowconfigure(1, weight=1)
 
         # >>>>> Crear el frame del ecualizador <<<<<
         self.create_frame_equalizer()
@@ -118,17 +133,31 @@ class GUI:
         self.create_frame_equalizer_options()
 
     def create_frame_options(self):
-        """Crear el frame de opciones de la pestaña principal"""
-        self.frm_options = ttk.Frame(
-            self.tab_main, padding=10, relief="groove", borderwidth=2
+        """Crear el frame de opciones de la pestaña principal con scrollbar"""
+        self.frm_options_outer = ttk.Frame(
+            self.tab_main, padding=5, relief="groove", borderwidth=2
         )
-        self.frm_options.grid(row=0, column=0, sticky="nsew")
-        self.frm_options.grid_propagate(False)
+        self.frm_options_outer.grid(row=0, column=0, sticky="nsew")
+        self.frm_options_outer.grid_rowconfigure(0, weight=1)
+        self.frm_options_outer.grid_columnconfigure(0, weight=1)
 
-        self.frm_options.update_idletasks()
-        self.frm_options.config(
-            width=self.computer_screen_width * 0.25,
-            height=self.computer_screen_height * 0.75,
+        self.options_canvas = tk.Canvas(self.frm_options_outer, highlightthickness=0)
+        self.options_scrollbar = ttk.Scrollbar(
+            self.frm_options_outer, orient="vertical", command=self.options_canvas.yview
+        )
+        self.frm_options = ttk.Frame(self.options_canvas)
+
+        self.options_canvas.create_window((0, 0), window=self.frm_options, anchor="nw")
+        self.options_canvas.configure(yscrollcommand=self.options_scrollbar.set)
+
+        self.options_canvas.grid(row=0, column=0, sticky="nsew")
+        self.options_scrollbar.grid(row=0, column=1, sticky="ns")
+
+        self.frm_options.bind(
+            "<Configure>",
+            lambda e: self.options_canvas.configure(
+                scrollregion=self.options_canvas.bbox("all")
+            ),
         )
 
         # >>>>> Selección de ruido <<<<<
@@ -161,13 +190,8 @@ class GUI:
             self.tab_main, padding=10, relief="groove", borderwidth=2
         )
         self.frm_graph.grid(row=0, column=1, sticky="nsew")
-        self.frm_graph.grid_propagate(False)
-
-        self.frm_graph.update_idletasks()
-        self.frm_graph.config(
-            width=self.computer_screen_width * 0.85,
-            height=self.computer_screen_height * 0.85,
-        )
+        self.frm_graph.grid_columnconfigure(0, weight=1)
+        self.frm_graph.grid_rowconfigure(0, weight=1)
 
     def create_radio_buttons_noise_type(self):
         """Crear los radio buttons para seleccionar el tipo de ruido"""
@@ -349,8 +373,8 @@ class GUI:
             self.tab_equalizer, relief="groove", borderwidth=2
         )
         self.frm_equalizer_graph.grid(row=0, column=0, sticky="nsew")
-
-        self.frm_equalizer_graph.config(width=self.computer_screen_width * 0.5)
+        self.frm_equalizer_graph.grid_columnconfigure(0, weight=1)
+        self.frm_equalizer_graph.grid_rowconfigure(0, weight=1)
 
     def create_frame_user_data(self):
         """Crear el marco para representar los valores promediados del usuario"""
@@ -498,9 +522,11 @@ class GUI:
         self.frm_equalizer_scales.grid(row=1, column=0, sticky="nsew")
 
         self.clear_frame(self.frm_equalizer_scales)
+        self.frm_equalizer_scales.grid_columnconfigure(0, weight=1)
+        self.frm_equalizer_scales.grid_rowconfigure(0, weight=1)
 
         # Crear canvas con barra de desplazamiento para evitar desbordamiento en la pantalla
-        self.scales_canvas = tk.Canvas(self.frm_equalizer_scales)
+        self.scales_canvas = tk.Canvas(self.frm_equalizer_scales, highlightthickness=0)
         self.scales_scrollbar = tk.Scrollbar(
             self.frm_equalizer_scales,
             orient="horizontal",
@@ -514,15 +540,12 @@ class GUI:
         self.scales_canvas.grid(row=0, column=0, sticky="nsew")
         self.scales_scrollbar.grid(row=1, column=0, sticky="ew")
 
-        # Sliders ocupan todo el espacio del menú frm_equalizer_scales
-        self.frm_equalizer_scales.grid_columnconfigure(0, weight=1)
-
         # Crear un Frame dentro del scales_canvas para colocar los sliders
         self.frm_scales = tk.Frame(
             self.scales_canvas, relief="raised", borderwidth=5
         )
         self.scales_canvas.create_window(
-            (0, 0), window=self.frm_scales, anchor="center"
+            (0, 0), window=self.frm_scales, anchor="nw"
         )
 
         self.equalizer_scales = []  # Reiniciar array con deslizadores
@@ -543,7 +566,7 @@ class GUI:
         self.scales_canvas.config(
             scrollregion=self.scales_canvas.bbox("all")
         )  # Indica la región desplazable del Canvas, en este caso todo el Canvas
-        self.scales_canvas.config(width=300, height=150)
+        self.scales_canvas.config(height=200)
 
     def update_scales_values_and_labels(self, formatted_frequencies):
         """Actualiza los valores de los deslizadores y las frecuencias a las que pertenecen"""
@@ -595,7 +618,7 @@ class GUI:
 
         self.plot_canvas_main_graph.draw()
         self.plot_canvas_main_graph.get_tk_widget().grid(
-            row=0, column=0, padx=10, pady=10
+            row=0, column=0, padx=10, pady=10, sticky="nsew"
         )  # Mostrar el lienzo en la ventana
 
         # Conectar el evento de movimiento del ratón a la función
@@ -623,7 +646,7 @@ class GUI:
 
         self.plot_canvas_equalizer_graph.draw()
         self.plot_canvas_equalizer_graph.get_tk_widget().grid(
-            row=0, column=0, padx=10, pady=10
+            row=0, column=0, padx=10, pady=10, sticky="nsew"
         )  # Mostrar el lienzo en la ventana
 
         # Conectar el evento de movimiento del ratón a la función
