@@ -31,7 +31,7 @@ class GUI:
         # Habilitar redimensionamiento
         self.root.resizable(True, True)
         self.root.update_idletasks()
-        self.root.geometry("1200x800") # Tamaño inicial de la ventana
+        self.root.geometry("1200x600") # Tamaño inicial de la ventana
         self.root.update()
 
         self.main_window = ttk.Notebook(self.root)  # Ventana principal
@@ -116,6 +116,36 @@ class GUI:
 
         return True
             
+    def is_valid_db_string(self, s):
+        """Valida si una cadena tiene un formato de dB aceptado (máx 3 enteros, máx 2 decimales)"""
+        s = s.strip()
+        if not s:
+            return False
+
+        # Quitar signo para analizar
+        val_s = s[1:] if s.startswith("-") else s
+
+        if not val_s:  # Caso donde solo hay un "-"
+            return False
+
+        if "." in val_s:
+            parts = val_s.split(".")
+            if len(parts) != 2:
+                return False
+            left, right = parts
+
+            # Parte entera: máximo 3 dígitos
+            if left != "" and (not left.isdigit() or len(left) > 3):
+                return False
+            # Parte decimal: máximo 2 dígitos
+            if right != "" and (not right.isdigit() or len(right) > 2):
+                return False
+        else:
+            # Sin punto: máximo 3 dígitos enteros
+            if not val_s.isdigit() or len(val_s) > 3:
+                return False
+
+        return True
 
     def create_main_tab(self):
         """Crear la pestaña principal de la interfaz"""
@@ -141,7 +171,7 @@ class GUI:
         self.tab_equalizer.grid_columnconfigure(0, weight=3)
         self.tab_equalizer.grid_columnconfigure(1, weight=1)
         self.tab_equalizer.grid_rowconfigure(0, weight=3)
-        self.tab_equalizer.grid_rowconfigure(1, weight=1)
+        self.tab_equalizer.grid_rowconfigure(1, weight=1, minsize=200)
 
         # >>>>> Crear el frame del ecualizador <<<<<
         self.create_frame_equalizer()
@@ -539,6 +569,13 @@ class GUI:
             ],
         )
         self.btn_introduce_csv.grid(row=3, column=0)
+        
+        self.btn_csv_info = ttk.Button(
+            self.frm_equalizer_options,
+            text="[?] Información sobre .csv",
+            command=self.on_show_csv_info,
+        )
+        self.btn_csv_info.grid(row=3, column=1, sticky="w")
 
     def create_equalizer_scales(self):
         """Crea la interfaz con los botones delizables para ecualizar la señal"""
@@ -592,7 +629,7 @@ class GUI:
         self.scales_canvas.config(
             scrollregion=self.scales_canvas.bbox("all")
         )  # Indica la región desplazable del Canvas, en este caso todo el Canvas
-        self.scales_canvas.config(height=200)
+        self.scales_canvas.config(height=250)
 
     def update_scales_values_and_labels(self, formatted_frequencies):
         """Actualiza los valores de los controles de ganancia y las frecuencias a las que pertenecen"""
@@ -607,6 +644,7 @@ class GUI:
                 from_=10,
                 to=-10,
                 orient="vertical",
+                length=150,
                 command=lambda value, var=label_var: self.update_scales_gain(
                     float(value), var
                 ),  # Enlazar cada slider con su propia etiqueta
@@ -995,34 +1033,62 @@ class GUI:
             filetypes=[("Archivos CSV", "*.csv")]
         )
         if archivo:
-            with open(archivo, newline="", encoding="utf-8") as f:
-                lector = csv.reader(f)
-                datos = list(lector)  # Convertir a lista
+            try:
+                with open(archivo, newline="", encoding="utf-8") as f:
+                    lector = csv.reader(f, delimiter=";")
+                    datos = list(lector)  # Convertir a lista
 
-            csv_frequencies = np.array(
-                [float(csv_f) for csv_f in datos[0][0].split(";")]
-            )
-            csv_band_levels = np.array(
-                [float(csv_level) for csv_level in datos[1][0].split(";")]
-            )
+                if len(datos) < 2:
+                    raise ValueError("El archivo no tiene el formato esperado (mínimo dos filas).")
 
-            if np.array_equal(
-                self.filter.selected_nominal_frequencies, csv_frequencies
-            ):
-                for csv_level, entry in zip(
-                    csv_band_levels, self.user_data_entry_vars.values()
+                # Validar valores de dB antes de convertirlos
+                for level_str in datos[1]:
+                    if not self.is_valid_db_string(level_str):
+                        messagebox.showerror(
+                            "ERROR DE FORMATO",
+                            f"El valor '{level_str}' en el archivo CSV no es válido.\n\n"
+                            "Los valores aceptados deben cumplir:\n"
+                            "- Máximo 3 dígitos enteros.\n"
+                            "- Máximo 2 dígitos decimales.\n"
+                            "- Signo negativo opcional al inicio.\n"
+                            "- Punto (.) como separador decimal"
+                        )
+                        return
+
+                csv_frequencies = np.array([float(f) for f in datos[0]])
+                csv_band_levels = np.array([float(l) for l in datos[1]])
+
+                if np.array_equal(
+                    self.filter.selected_nominal_frequencies, csv_frequencies
                 ):
-                    entry.set(csv_level)
+                    for csv_level, entry_var in zip(
+                        csv_band_levels, self.user_data_entry_vars.values()
+                    ):
+                        # Formatear para evitar muchos decimales innecesarios en la UI
+                        entry_var.set(f"{csv_level:.2f}".rstrip('0').rstrip('.'))
 
-                self.root.update_idletasks()
-            else:
-                messagebox.showerror(
-                    "ERROR",
-                    f"Las frecuencias del archivo con las medidas promediadas no coincide con las frecuencias filtradas",
-                )
+                    self.root.update_idletasks()
+                else:
+                    messagebox.showerror(
+                        "ERROR",
+                        f"Las frecuencias del archivo con las medidas promediadas no coinciden con las frecuencias filtradas",
+                    )
+            except Exception as e:
+                messagebox.showerror("ERROR", f"No se pudo leer el archivo CSV: {e}")
+
 
     def on_apply_filter(self):
         """ Aplicar filtro """
+        
+        # Mensaje pop-up indicando si se quiere realizar otro filtrado, ya que existe una señal ya creada
+        if self.filter.filtered_signal is not None:
+            confirm = messagebox.askyesno(
+                "Confirmación",
+                "Ya existe una señal generada. ¿Estás seguro de que quieres generar una nueva señal? Se perderá la ecualización anterior.",
+            )
+            if not confirm:
+                return
+                
         self.check_selected_time_type()
         self.apply_filter()
         self.create_main_graph()
@@ -1033,6 +1099,9 @@ class GUI:
     def on_apply_equalization(self):
         """ Aplicar ecualización """
         print("Se aplica la ecualización")
+        # Si el hilo de reproducción está activo se detiene
+        self.audio_player.stop_noise_thread()
+        
         self.btn_apply_equalization.config(state="disabled")
         scales_gain_db = np.array(
             [scale.get() for scale in self.equalizer_scales]
@@ -1046,6 +1115,19 @@ class GUI:
         """ Introducir datos del usuario """
         self.check_energy_averaging_iso_16283_1()
 
+    def on_show_csv_info(self):
+        """ Mostrar información sobre el formato del archivo CSV """
+        mensaje = (
+            "El archivo .csv debe tener el siguiente formato:\n\n"
+            "- Primera fila: Frecuencias nominales separadas por ';'\n"
+            "- Segunda fila: Niveles en dB de cada banda separados por ';'\n\n"
+            "Ejemplo de contenido del archivo:\n"
+            "31.5;40;50;63;80;100;125;160\n"
+            "67;89;-45;12.12;14.6;75.2;78.5;80.1"
+        )
+        messagebox.showinfo("Información de formato CSV", mensaje)
+
+    
     def on_close_app(self):
         """Función que se ejecuta al cerrar la ventana"""
         print("Cerrando la aplicación...")
