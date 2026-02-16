@@ -81,16 +81,41 @@ class GUI:
                 pass  # Algunos widgets como Frames no tienen "state", así que los ignoramos.
 
     def on_validate_user_data_input(self, P):
-        """ Verifica los valores de entrada del usuario, sólo máximo 3 dígitos enteros positivos o negativos """
-        if P == "":  # Permitir campo vacío
+        # Permitir estados intermedios mientras escribe
+        if P in ("", "-", ".", "-."):
             return True
-        if P == "-":  # Permitir solo el signo negativo
-            return True
-        if P.isdigit() and len(P) <= 3:  # Números positivos hasta 3 dígitos
-            return True
-        if P.startswith("-") and P[1:].isdigit() and len(P) <= 4:  # Números negativos hasta -999
-            return True
-        return False
+
+        # Solo un signo negativo y al inicio
+        if P.count("-") > 1:
+            return False
+        if "-" in P and not P.startswith("-"):
+            return False
+
+        # Quitar signo para analizar
+        s = P[1:] if P.startswith("-") else P
+
+        # Solo un punto decimal
+        if s.count(".") > 1:
+            return False
+
+        if "." in s:
+            left, right = s.split(".", 1)
+
+            # Parte entera: máximo 3 dígitos
+            if left != "" and (not left.isdigit() or len(left) > 3):
+                return False
+
+            # Parte decimal: máximo 2 dígitos
+            if right != "" and (not right.isdigit() or len(right) > 2):
+                return False
+
+        else:
+            # Sin punto: máximo 3 dígitos enteros
+            if not s.isdigit() or len(s) > 3:
+                return False
+
+        return True
+            
 
     def create_main_tab(self):
         """Crear la pestaña principal de la interfaz"""
@@ -120,6 +145,7 @@ class GUI:
 
         # >>>>> Crear el frame del ecualizador <<<<<
         self.create_frame_equalizer()
+        
         # >>>>> Crear la gráfica con los niveles para el ecualizador <<<<<
         self.create_equalizer_graph()
 
@@ -467,10 +493,10 @@ class GUI:
         )
         self.frm_equalizer_options.grid(row=1, column=1, sticky="nsew")
 
-        # >>>> Aplanar los deslizadores <<<<<
+        # >>>> Aplanar los controles de ganancia <<<<<
         self.btn_reset_scales = ttk.Button(
             self.frm_equalizer_options,
-            text="Aplanar deslizadores",
+            text="Aplanar los controles de ganancia",
             command=self.reset_scales,
         )
         self.btn_reset_scales.grid(row=0, column=0)
@@ -548,7 +574,7 @@ class GUI:
             (0, 0), window=self.frm_scales, anchor="nw"
         )
 
-        self.equalizer_scales = []  # Reiniciar array con deslizadores
+        self.equalizer_scales = []  # Reiniciar array con los controles de ganancia
         self.equalizer_scales_labels = (
             []
         )  # Reiniciar etiquetas para evitar duplicados
@@ -569,7 +595,7 @@ class GUI:
         self.scales_canvas.config(height=200)
 
     def update_scales_values_and_labels(self, formatted_frequencies):
-        """Actualiza los valores de los deslizadores y las frecuencias a las que pertenecen"""
+        """Actualiza los valores de los controles de ganancia y las frecuencias a las que pertenecen"""
         for i, freq in enumerate(formatted_frequencies):
             label_var = tk.StringVar(value="0.0 dB")
 
@@ -694,7 +720,6 @@ class GUI:
         self.radio_btn_lowpass.config(state="!disabled")
         self.radio_btn_highpass.config(state="!disabled")
         self.radio_btn_bandpass.config(state="!disabled")
-        # self.radio_btn_notch.config(state="!disabled") BORRAR
         self.radio_btn_allpass.config(state="!disabled")
 
         self.clear_bands()
@@ -717,7 +742,6 @@ class GUI:
 
     def update_bands(self):
         """Actualizar las bandas disponibles en el combobox"""
-
         # Obtener bandas nominales y frecuencias de corte marcadas
         bands = self.get_bands_for_band_type()
         selected_fl = self.combo_low_freq.get()
