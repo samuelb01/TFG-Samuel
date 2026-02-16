@@ -935,20 +935,34 @@ class GUI:
                     "No se ha podido realizar el filtrado de la señal de referencia, revise el tipo de filtro, de ruido, bandas a filtrar y duración",
                 )
         else:
+            from config import SAMPLE_RATE
+            
+            # Para evitar transitorios de filtros de alto orden (como orden 32), 
+            # se generam un periodo extra de "warmup" y luego lo descartamos tras el filtrado.
+            warmup_time = 1  # 1 segundo de "calentamiento" para el filtro
+            total_duration = time_entry + warmup_time
+
             # Decidir tipo de filtro y de ruido para filtrar
             if selected_noise == "WHITE NOISE":  # RUIDO BLANCO
                 self.filter.signal = self.noise_generator.generate_white_noise(
-                    time_entry
+                    total_duration
                 )
             elif selected_noise == "PINK NOISE":  # RUIDO ROSA
                 self.filter.signal = self.noise_generator.generate_pink_noise(
-                    time_entry
+                    total_duration
                 )
 
             if selected_filter == "1/1":  # 1/1 OCTAVA
                 self.filter.octave_filter(bandas_a_filtrar)
             elif selected_filter == "1/3":  # 1/3 OCTAVA
                 self.filter.third_octave_filter(bandas_a_filtrar)
+
+            # Descartar el periodo de warmup para eliminar el transitorio del filtro
+            warmup_samples = int(warmup_time * SAMPLE_RATE)
+            self.filter.signal = self.filter.signal[warmup_samples:]
+            self.filter.filtered_signal = self.filter.filtered_signal[warmup_samples:]
+            if self.filter.filtered_bands is not None:
+                self.filter.filtered_bands = self.filter.filtered_bands[:, warmup_samples:]
 
             self.filter.get_selected_nominal_frequencies()
 

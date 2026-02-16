@@ -36,6 +36,23 @@ class AudioPlayer:
 
     def play_noise(self, signal_to_play):
         """Reproduce el ruido generado"""
+        
+        # Copiar la señal y asegurar que es float para aplicar el fade
+        signal = signal_to_play.copy().astype(np.float64)
+        
+        # Aplicar Fade-in y Fade-out de 100ms para evitar comienzo y final bruscos
+        fade_duration = 0.1  # segundos
+        fade_samples = int(fade_duration * SAMPLE_RATE)
+        
+        if len(signal) > 2 * fade_samples:
+            # Rampa ascendente (Fade-in)
+            fade_in = np.linspace(0, 1, fade_samples)
+            signal[:fade_samples] *= fade_in
+            
+            # Rampa descendente (Fade-out)
+            fade_out = np.linspace(1, 0, fade_samples)
+            signal[-fade_samples:] *= fade_out
+
         p = pyaudio.PyAudio()  # Inicializar PyAudio
 
         try:
@@ -50,11 +67,18 @@ class AudioPlayer:
             start = 0  # Inicio de la reproducción
 
             while not self.control_noise_event.is_set() and start < len(
-                signal_to_play
+                signal
             ):  # Mientras el evento no esté activado
                 end = start + chunk  # Fin de la reproducción
+                
+                # Obtener el fragmento de audio
+                audio_chunk = signal[start:end]
+                
+                # Clipping para evitar desbordamiento (wrapping) en la conversión a int16
+                audio_chunk = np.clip(audio_chunk, -32768, 32767)
+                
                 stream.write(
-                    signal_to_play[start:end].astype(np.int16).tobytes()
+                    audio_chunk.astype(np.int16).tobytes()
                 )  # Reproducir audio
                 start = end  # Actualizar inicio de la reproducción
 
