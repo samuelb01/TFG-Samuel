@@ -9,9 +9,14 @@ from tkinter import ttk, messagebox, TclError, filedialog
 import numpy as np
 import csv
 
+import sys
+import wave
+from pathlib import Path
+from datetime import datetime
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from config import NOMINAL_OCTAVE_FREQ, NOMINAL_THIRDOCTAVE_FREQ, DURATION
+from config import NOMINAL_OCTAVE_FREQ, NOMINAL_THIRDOCTAVE_FREQ, DURATION, SAMPLE_RATE
 
 
 class GUI:
@@ -239,6 +244,9 @@ class GUI:
 
         # >>>>> Reproducir y parar el ruido <<<<<
         self.create_button_play_stop_noise()
+        
+        # >>>>> Guardar señal filtrada en WAV <<<<<
+        self.create_button_save_wav()
 
     def create_frame_graph(self):
         """Crear el frame del gráfico de la pestaña principal"""
@@ -422,6 +430,16 @@ class GUI:
             state="disabled",
         )
         self.btn_stop.grid(row=18, columnspan=2)
+        
+    def create_button_save_wav(self):
+        """Crea el botón para guardar la señal filtrada en WAV"""
+        self.btn_save_wav = ttk.Button(
+            self.frm_options,
+            text="GUARDAR WAV",
+            command=self.on_save_filtered_signal,
+            state="disabled",
+        )
+        self.btn_save_wav.grid(row=19, columnspan=2)
 
     def create_frame_equalizer(self):
         """Crea el marco para el ecualizador"""
@@ -1095,6 +1113,7 @@ class GUI:
         self.create_equalizer_tab()
         self.check_conditions()
         self.btn_play_noise.config(state="!disabled")
+        self.btn_save_wav.config(state="!disabled")
 
     def on_apply_equalization(self):
         """ Aplicar ecualización """
@@ -1133,3 +1152,85 @@ class GUI:
         print("Cerrando la aplicación...")
         self.root.destroy()  # Cierra la ventana
         exit(0)  # Termina el script correctamente
+        
+    def get_output_data_dir(self):
+        """
+        Devuelve la carpeta data donde se guardarán los WAV.
+        
+        - Si la app se ejecuta como .exe, usa una carpeta 'data' junto al ejecutable.
+        - Si se ejecuta como script .py, usa la carpeta 'data' del proyecto.
+        """
+        if getattr(sys, "frozen", False):
+            # Ejecutándose como .exe
+            base_dir = Path(sys.executable).resolve().parent
+        else:
+            # Ejecutándose como script
+            script_dir = Path(__file__).resolve().parent
+            base_dir = script_dir.parent.parent  # subir hasta TFG_SAMUEL
+
+        data_dir = base_dir / "data"  # Carpeta 'data' para guardar los WAV
+        data_dir.mkdir(parents=True, exist_ok=True)  # Crear la carpeta 'data' si no existe
+        return data_dir
+
+
+    def build_output_filename(self):
+        """
+        Construye un nombre de archivo informativo para la señal filtrada.
+        """
+        noise_type = self.noise_type.get().strip().replace(" ", "_").lower()
+        band_type = self.band_type.get().strip().replace("/", "-")
+        low_freq = self.combo_low_freq.get().strip()
+        high_freq = self.combo_high_freq.get().strip()
+        duration = self.time_entry.get().strip()
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        return (
+            f"filtered_{noise_type}_{band_type}_"
+            f"{low_freq}_{high_freq}_{duration}s_{timestamp}.wav"
+        )
+
+
+    def save_signal_to_wav(self, signal, output_path):
+        """
+        Guarda una señal mono en formato WAV PCM de 16 bits.
+        """
+        # Para guardar la señal en formato WAV PCM de 16 bits es necesario escalarla al rango de -32768 a 32767
+        signal_to_save = np.clip(signal, -32768, 32767).astype(np.int16)  
+
+        # Guardar la señal en un archivo WAV
+        with wave.open(str(output_path), "wb") as wav_file:
+            wav_file.setnchannels(1)  # Mono
+            wav_file.setsampwidth(2)  # 16 bits = 2 bytes
+            wav_file.setframerate(SAMPLE_RATE)  # Frecuencia de muestreo
+            wav_file.writeframes(signal_to_save.tobytes())  # Escribir los datos de audio
+
+
+    def on_save_filtered_signal(self):
+        """
+        Guarda la señal filtrada actual en la carpeta data.
+        """
+        if self.filter.filtered_signal is None:
+            messagebox.showwarning(
+                "ADVERTENCIA",
+                "No hay ninguna señal filtrada para guardar."
+            )
+            return
+
+        try:
+            data_dir = self.get_output_data_dir()  # Obtener la carpeta de salida para los archivos WAV
+            filename = self.build_output_filename()  # Construir un nombre de archivo informativo
+            output_path = data_dir / filename  # Ruta completa del archivo de salida
+
+            self.save_signal_to_wav(self.filter.filtered_signal, output_path)  # Guardar la señal filtrada en formato WAV
+
+            messagebox.showinfo(
+                "GUARDADO CORRECTO",
+                f"Se ha guardado la señal filtrada en:\n{output_path}"
+            )
+
+        except Exception as e:
+            messagebox.showerror(
+                "ERROR",
+                f"No se pudo guardar el archivo WAV:\n{e}"
+            )
