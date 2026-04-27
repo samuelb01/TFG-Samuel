@@ -1,9 +1,7 @@
 # Autor: Samuel Bellón Elipe
 
 import numpy as np
-from scipy.signal import butter, sosfilt, sosfreqz
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
+from scipy.signal import butter, sosfilt
 
 # Importar constantes
 from config import (
@@ -12,10 +10,7 @@ from config import (
     G,
     FR,
     FILTER_ORDER,
-    SAMPLE_RATE,
-    EPSILON,
-    ACCEPTANCE_LIMITS_CLASS1,
-    ACCEPTANCE_LIMITS_CLASS2,
+    SAMPLE_RATE
 )
 
 class Filter:
@@ -205,91 +200,3 @@ class Filter:
 
         # Recombino las bandas filtradas para obtener la señal final filtrada
         self.recombine_bands()
-
-    def verify_filter_compliance(self, filter_class="1"):
-        """ Verifica si la señal filtrada cumple con los límites de aceptación de la norma ISO 61260-1""" 
-        filter_compliance_check = True
-        green_tick = "\u2705"  # Unicode para el símbolo de check verde
-        red_cross = "\u274c"  # Unicode para el símbolo de cruz roja
-
-        if filter_class == "1":  # Clase 1 de la norma ISO 61260-1
-            acceptance_limits = ACCEPTANCE_LIMITS_CLASS1
-        elif filter_class == "2":  # Clase 2 de la norma ISO 61260-1
-            acceptance_limits = ACCEPTANCE_LIMITS_CLASS2
-
-        print(f'EL ORDEN DE LOS FILTROS ES -> {FILTER_ORDER}')
-
-        all_sos = self.create_butter_bandpass_filters()  # Crear filtros Butterworth paso-banda en formato SOS
-
-        for i, (sos, f_low, f_high) in enumerate(
-            zip(all_sos, self.fl_selected_bands, self.fh_selected_bands)
-        ):
-            # Respuesta en frecuencia del filtro
-            w, h = sosfreqz(sos, worN=50000, fs=self.fs)
-
-            # Reemplazar valores cero por un valor muy pequeño antes de calcular el logaritmo para evitar errores
-            h = np.where(h == 0, EPSILON, h)
-            attenuation_db = 20 * np.log10(abs(h))
-
-            if self.filter_type == "octave":  
-                acceptance_limits = acceptance_limits  # Diccionario con los límites de aceptación de la norma ISO 61260-1 para bandas de octava
-            elif self.filter_type == "third-octave":
-                acceptance_limits = self.create_acceptance_limits_dicc(acceptance_limits, b=3)  # Diccionario con los límites de aceptación de la norma ISO 61260-1 para bandas de tercio de octava
-        
-            print(f"\n\n>>>>> FILTRO {i+1} <<<<<")
-            # Compara la atenuación de la señal filtrada (según respuesta del filtro) con los límites de aceptación de la norma ISO 61260-1
-            for omega, (low_limit, high_limit) in zip(list(acceptance_limits.keys()), list(acceptance_limits.values())): 
-                freq = omega * (
-                    (f_low * f_high) ** 0.5
-                )  # Frecuencia real basada en la normalización
-                idx = np.argmin(
-                    np.abs(w - freq)
-                )  # Encuentra la frecuencia más cercana en la respuesta del filtro
-                actual_att = attenuation_db[idx]
-
-
-                if low_limit <= -actual_att < high_limit:  # Comprueba si la atenuación está dentro de los límites de aceptación
-                    print(
-                        f"{green_tick} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {low_limit};{high_limit} dB)"
-                    )
-                    pass
-                elif -actual_att < low_limit or -actual_att > high_limit:  # Comprueba si la atenuación está fuera de los límites de aceptación
-                    print(
-                        f"{red_cross} Freq: {freq:.1f} Hz - Attenuation: {-actual_att:.1f} dB (Limit: {low_limit};{high_limit}dB)"
-                    )
-                    filter_compliance_check = False
-            
-        if filter_compliance_check:  # Comprueba si todos los filtros cumplen con la norma ISO 61260-1
-            print(f"\n\n{green_tick} Todos los filtros cumplen con la norma ISO 61260-1")
-        else:  # Si al menos un filtro no cumple con la norma ISO 61260-1
-            print(f"\n\n{red_cross} Al menos un filtro no cumple con la norma ISO 61260-1")
-
-    @staticmethod
-    def create_acceptance_limits_dicc(acceptance_limits, b):
-        """ Crea un diccionario con los límites de aceptación de la norma ISO 61260-1 para el tipo de banda de octava seleccionado """
-        if b != 1:
-            new_dicc = {}  # Diccionario para almacenar los nuevos límites de aceptación
-
-            keys = list(acceptance_limits.keys())  # Claves del diccionario de límites de aceptación
-            items = list(acceptance_limits.items())  # Elementos del diccionario de límites de aceptación
-            temp_list = [] # Lista temporal para almacenar los valores de las bandas de alta frecuencia
-
-            # Itera sobre los 10 últimos elementos del diccionario, emepzando por el último
-            for key, value in reversed(items[-10:]): 
-
-                # Norma ISO 61260-1 apartado 5.10.3 y 5.10.4 -> High-frequency and low-frequency fractional-octave-band normalized frequency
-                acceptance_limit = 1 + (((G**(1/(2*b))-1)/(G**(1/2)-1)) * (key-1))  # Calcula el nuevo límite de aceptación para la banda de alta frecuencia
-                new_key_high = acceptance_limit  # Nuevo límite de aceptación para la banda de alta frecuencia
-                new_key_low = 1/acceptance_limit  # Nuevo límite de aceptación para la banda de baja frecuencia
-                
-                if keys.index(key) == 9: # límites iguales para alta y baja frecuencia
-                    new_dicc[acceptance_limit] = value  
-                else:
-                    new_dicc[new_key_low] = value
-                    temp_list.append((new_key_high, value))
-
-            # Recorro inversamente la lista temporal para añadir los valores de alta frecuencia
-            for key, value in reversed(temp_list):
-                new_dicc[key] = value
-
-        return new_dicc # Devuelve el diccionario con los valores límites para el tipo de banda de octava seleccionado
