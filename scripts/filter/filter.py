@@ -108,10 +108,10 @@ class Filter:
     def calc_signal_band_levels(self):
         """Calcula los niveles de las bandas de la señal filtrada"""
         self.filtered_bands_levels = []  # Lista para almacenar los niveles de las bandas filtradas
-
+        
         for band in self.filtered_bands:  # Recorre las bandas filtradas
             rms = np.sqrt(np.mean(band**2))  # Valor de amplitud RMS
-            level = 20 * np.log10(rms)  # Nivel de cada banda
+            level = 20 * np.log10(rms/32767)  # Nivel de cada banda (FULL SCALE = 32767)
             self.filtered_bands_levels.append(level)  # Añade el nivel de la banda a la lista
 
     def recombine_bands(self):

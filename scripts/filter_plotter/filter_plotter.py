@@ -38,14 +38,19 @@ class FilterPlotter(Filter):
             edgecolor="black",
         )
 
-        # Obtener el nivel máximo de las bandas y agregar 15 dB
-        y_max = max(self.filtered_bands_levels) + 15
-        # Ajustar límites del eje Y
-        self.ax.set_ylim(0, y_max)
+        margin = 15  # Margen en dB
 
+        # Ajustar los límites del eje Y para que se vean todas las barras y un margen
+        y_min = min(self.filtered_bands_levels) - margin
+        y_max = max(self.filtered_bands_levels) + margin
+
+        # Ajustar los límites del eje Y para que se vean todas las barras y un margen
+        self.ax.set_ylim(y_min, y_max)
+        
+        # Configurar el eje X en escala logarítmica y etiquetar los ejes
         self.ax.set_xscale("log")
         self.ax.set_xlabel("Frecuencia (Hz)")
-        self.ax.set_ylabel("Nivel (dB)")
+        self.ax.set_ylabel("Nivel (dBFS)")
 
         # Personalizar el eje X para mostrar todas las frecuencias centrales
         self.ax.set_xticks(self.nominal_frequencies)
