@@ -29,28 +29,30 @@ class FilterPlotter(Filter):
         widths = np.array(self.fh_selected_bands) - np.array(
             self.fl_selected_bands
         )  # Calcular ancho de las barras en escala logarítmica
+        
+        min_level = -80  # límite inferior del eje Y (en dBFS)
+        max_level = 0    # 0 dBFS
+
+        levels = np.array(self.filtered_bands_levels)
+        levels_clipped = np.maximum(levels, min_level)
+
         self.bars = self.ax.bar(
             self.fl_selected_bands,
-            self.filtered_bands_levels,
+            levels_clipped - min_level,
+            bottom=min_level,
             width=widths,
             align="edge",
             color="skyblue",
             edgecolor="black",
         )
 
-        margin = 15  # Margen en dB
-
-        # Ajustar los límites del eje Y para que se vean todas las barras y un margen
-        y_min = min(self.filtered_bands_levels) - margin
-        y_max = max(self.filtered_bands_levels) + margin
-
-        # Ajustar los límites del eje Y para que se vean todas las barras y un margen
-        self.ax.set_ylim(y_min, y_max)
+        self.ax.set_ylim(min_level, max_level)
+        self.ax.axhline(0, color="red", linestyle="--", linewidth=1)
         
         # Configurar el eje X en escala logarítmica y etiquetar los ejes
         self.ax.set_xscale("log")
-        self.ax.set_xlabel("Frecuencia (Hz)")
-        self.ax.set_ylabel("Nivel (dBFS)")
+        self.ax.set_xlabel("Frecuencia (Hz)", fontsize=10)
+        self.ax.set_ylabel("Nivel (dBFS)", fontsize=10)
 
         # Personalizar el eje X para mostrar todas las frecuencias centrales
         self.ax.set_xticks(self.nominal_frequencies)
@@ -60,6 +62,7 @@ class FilterPlotter(Filter):
                 for freq in self.nominal_frequencies
             ],
             rotation=45,
+            fontsize=7
         )
 
         # Agregar la cuadrícula
